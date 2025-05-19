@@ -8,6 +8,8 @@ from collections import Counter
 from torchvision import transforms
 import random
 
+# ✅ utils.py
+
 def oversample_dataset(dataset, target_count=300):
     label_to_indices = {}
     for idx, (_, label) in enumerate(dataset):
@@ -15,7 +17,6 @@ def oversample_dataset(dataset, target_count=300):
 
     new_samples = []
 
-    # Define augmentations
     augmentation = transforms.Compose([
         transforms.RandomHorizontalFlip(),
         transforms.RandomRotation(20),
@@ -31,13 +32,12 @@ def oversample_dataset(dataset, target_count=300):
             repeat_times = target_count - len(samples)
             for _ in range(repeat_times):
                 img, lbl = random.choice(samples)
-                img = transforms.ToPILImage()(img)
-                img = augmentation(img)
-                img = transforms.ToTensor()(img)
+                img = augmentation(img)  # keep as PIL image
                 new_samples.append((img, lbl))
             new_samples.extend(samples)
 
     return new_samples
+
 '''
 def oversample_dataset(dataset, target_count=300):
     label_to_indices = {}
