@@ -8,12 +8,24 @@ from torchvision.datasets import ImageFolder
 from torchvision import transforms
 from utils import visualize_class_distribution, oversample_dataset  # Adjust import path if needed
 from torch.utils.data import Subset
-
+import json
+import os
 
 def load_data(data_dir, processor, is_train=False, target_count=300):
     transform = transforms.Resize((224, 224))
 
     raw_dataset = ImageFolder(data_dir, transform=transform)
+
+    label_map_path = "saved_model/trainlabel_mapping.json"
+    if os.path.exists(label_map_path):
+        with open(label_map_path, "r") as f:
+            class_to_idx = json.load(f)
+        raw_dataset.class_to_idx = class_to_idx  # 🔁 overwrite default
+    else:
+        class_to_idx = raw_dataset.class_to_idx
+        if is_train:
+            with open(label_map_path, "w") as f:
+                json.dump(class_to_idx, f)
 
     if is_train:
         print("📊 Visualizing class distribution (before oversampling)...")
@@ -21,7 +33,7 @@ def load_data(data_dir, processor, is_train=False, target_count=300):
         print("📈 OverSampling...")
         class_names = raw_dataset.classes  # save before overwriting raw_dataset
 
-        raw_dataset = oversample_dataset(raw_dataset, target_count=target_count)
+       # raw_dataset = oversample_dataset(raw_dataset, target_count=target_count)
 
         print("📈 Visualizing class distribution (after oversampling)...")
 #        visualize_class_distribution(raw_dataset, title="After Oversampling", class_names=class_names)
@@ -97,7 +109,13 @@ def main():
 
     model_name = "google/vit-base-patch16-224-in21k"
     processor = ViTImageProcessor.from_pretrained(model_name)
-    model = ViTForImageClassification.from_pretrained(model_name, num_labels=120).to(device)
+    with open("saved_model/trainlabel_mapping.json") as f:
+        label_map = json.load(f)
+
+    num_classes = len(label_map)
+
+    model = ViTForImageClassification.from_pretrained(model_name, num_labels=num_classes)
+
 
     print("📦 Loading datasets...")
     train_dataset = load_data(train_dir, processor, is_train=True, target_count=300)
@@ -108,11 +126,7 @@ def main():
         per_device_train_batch_size=16,
         per_device_eval_batch_size=16,
         num_train_epochs=3,
-        evaluation_strategy="epoch",
-        save_strategy="epoch",
         logging_dir="./logs",
-        load_best_model_at_end=True,
-        fp16=torch.cuda.is_available(),
         report_to="none"
     )
 
