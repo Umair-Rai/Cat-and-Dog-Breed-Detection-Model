@@ -29,14 +29,14 @@ def load_data(data_dir, processor, is_train=False, target_count=300):
 
     if is_train:
         print("📊 Visualizing class distribution (before oversampling)...")
-#        visualize_class_distribution(raw_dataset, title="Before Oversampling")
+        visualize_class_distribution(raw_dataset, title="Before Oversampling")
         print("📈 OverSampling...")
         class_names = raw_dataset.classes  # save before overwriting raw_dataset
 
-       # raw_dataset = oversample_dataset(raw_dataset, target_count=target_count)
+        raw_dataset = oversample_dataset(raw_dataset, target_count=target_count)
 
         print("📈 Visualizing class distribution (after oversampling)...")
-#        visualize_class_distribution(raw_dataset, title="After Oversampling", class_names=class_names)
+        visualize_class_distribution(raw_dataset, title="After Oversampling", class_names=class_names)
 
     def transform_examples(example):
         image, label = example
