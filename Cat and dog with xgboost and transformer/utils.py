@@ -10,6 +10,40 @@ import random
 
 # ✅ utils.py
 
+
+def oversample_dataset(dataset, target_count=300):
+    label_to_indices = {}
+    for idx, (_, label) in enumerate(dataset):
+        label_to_indices.setdefault(label, []).append(idx)
+
+    class_to_idx = dataset.class_to_idx  # preserve
+
+    new_samples = []
+    augmentation = transforms.Compose([
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomRotation(20),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        transforms.RandomResizedCrop(size=(224, 224), scale=(0.8, 1.0)),
+    ])
+
+    for label, indices in label_to_indices.items():
+        samples = [dataset[i] for i in indices]
+        if len(samples) >= target_count:
+            new_samples.extend(samples[:target_count])
+        else:
+            for _ in range(target_count - len(samples)):
+                img, lbl = random.choice(samples)
+                img = augmentation(img)
+                img = transforms.ToTensor()(img)
+                new_samples.append((img, lbl))
+            new_samples.extend(samples)
+
+    # Convert to custom dataset with class_to_idx
+    oversampled_dataset = new_samples
+    oversampled_dataset.class_to_idx = class_to_idx  # manually attach
+
+    return oversampled_dataset
+'''
 def oversample_dataset(dataset, target_count=300):
     label_to_indices = {}
     for idx, (_, label) in enumerate(dataset):
@@ -38,7 +72,7 @@ def oversample_dataset(dataset, target_count=300):
 
     return new_samples
 
-'''
+
 def oversample_dataset(dataset, target_count=300):
     label_to_indices = {}
     for idx, (_, label) in enumerate(dataset):
