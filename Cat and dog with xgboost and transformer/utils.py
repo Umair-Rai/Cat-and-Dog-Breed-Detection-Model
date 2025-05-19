@@ -62,18 +62,23 @@ def oversample_dataset(dataset, target_count=300):
 '''
 
 
-def visualize_class_distribution(dataset, title="Class Distribution"):
+def visualize_class_distribution(dataset, title="Class Distribution", class_names=None):
     label_counts = Counter([label for _, label in dataset])
     labels, counts = zip(*label_counts.items())
 
-    class_names = [dataset.classes[i] for i in labels]
+    # Use passed class_names if provided, else try getting from dataset
+    if class_names is None and hasattr(dataset, 'classes'):
+        class_names = [dataset.classes[i] for i in labels]
+    elif class_names is not None:
+        class_names = [class_names[i] for i in labels]
+    else:
+        class_names = [str(i) for i in labels]  # fallback: use label IDs
 
-    plt.figure(figsize=(24, 10))  # Wider and taller figure for readability
+    plt.figure(figsize=(24, 10))
     plt.bar(class_names, counts, color='skyblue')
     plt.title(title, fontsize=16)
     plt.xlabel("Classes", fontsize=14)
     plt.ylabel("Number of Images", fontsize=14)
-    plt.xticks(rotation=90, fontsize=8)  # Rotate more and reduce font size
+    plt.xticks(rotation=90, fontsize=8)
     plt.tight_layout()
     plt.show()
-
