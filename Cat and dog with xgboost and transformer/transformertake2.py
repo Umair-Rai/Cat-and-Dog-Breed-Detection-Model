@@ -1,9 +1,9 @@
 import torch
 import numpy as np
+from PIL import Image
 from transformers import ViTForImageClassification, ViTImageProcessor, Trainer, TrainingArguments
 from datasets import load_dataset
 from evaluate import load
-from PIL import Image
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
 from utils import visualize_class_distribution, oversample_dataset  # Adjust import path if needed
@@ -11,43 +11,35 @@ from torch.utils.data import Subset
 
 
 def load_data(data_dir, processor, is_train=False, target_count=300):
-    transform = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor()
-    ])
+    transform = transforms.Resize((224, 224))
 
     raw_dataset = ImageFolder(data_dir, transform=transform)
 
     if is_train:
         print("📊 Visualizing class distribution (before oversampling)...")
-        visualize_class_distribution(raw_dataset, title="Before Oversampling")
-
+#        visualize_class_distribution(raw_dataset, title="Before Oversampling")
+        print("📈 OverSampling...")
         class_names = raw_dataset.classes  # save before overwriting raw_dataset
 
         raw_dataset = oversample_dataset(raw_dataset, target_count=target_count)
 
         print("📈 Visualizing class distribution (after oversampling)...")
-        visualize_class_distribution(raw_dataset, title="After Oversampling", class_names=class_names)
+#        visualize_class_distribution(raw_dataset, title="After Oversampling", class_names=class_names)
 
     def transform_examples(example):
-        image = example[0]
-        label = example[1]
-        image = transforms.ToPILImage()(image)
+        image, label = example
+
         if image.mode != "RGB":
             image = image.convert("RGB")
+
         inputs = processor(images=image, return_tensors="pt")
+
         return {
             'pixel_values': inputs['pixel_values'][0],
             'label': label
         }
 
     processed_dataset = [transform_examples(example) for example in raw_dataset]
-
-    import json
-    if is_train:
-        label_map = raw_dataset.class_to_idx
-        with open("label_mapping.json", "w") as f:
-            json.dump(label_map, f)
 
     return processed_dataset
 
