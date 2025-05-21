@@ -7,7 +7,7 @@ from evaluate import load
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
 from torch.utils.data import Dataset
-from utils2 import visualize_class_distribution, oversample_dataset
+from utils import visualize_class_distribution, oversample_dataset
 import json
 import os
 
