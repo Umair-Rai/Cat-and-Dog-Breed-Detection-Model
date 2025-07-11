@@ -1,3 +1,6 @@
-npx create-react-app  #Create a React Project
+npx create-react-app (app-name-in-lower-case) #Create a React Project
+cd (app-name)
 npm install -D tailwindcss postcss autoprefixer @headlessui/react @heroicons/react # install tailwindcss For React
 npx tailwindcss init -p # make tailwind-config and post-css-config file
+npm uninstall react-scripts #delete previous react-scripts
+npm install react-scripts@latest #downlad react-scripts again
