@@ -1,6 +1,7 @@
 npx create-react-app (app-name-in-lower-case) #Create a React Project
 cd (app-name)
 npm install -D tailwindcss postcss autoprefixer @headlessui/react @heroicons/react # install tailwindcss For React
+npm install lucide-react 
 npx tailwindcss init -p # make tailwind-config and post-css-config file
 npm install @material-tailwind/react #for tailwind ui
 {(if your npm start does not work and its giving react-scripts error)
