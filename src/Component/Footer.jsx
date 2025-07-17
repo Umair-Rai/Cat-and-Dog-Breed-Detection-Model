@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import React from 'react';
 import {
   Facebook,
@@ -6,15 +7,26 @@ import {
 } from 'lucide-react'; // You can replace with Heroicons if needed
 
 const Footer = () => {
-  const features = ['Home', 'Breed Detection', 'Smart Shopping', 'Breeder Connect'];
-  const company = ['About', 'Contact', 'Privacy Policy', 'Terms'];
+  const features = [
+    { label: 'Home', path: '/' },
+    { label: 'Breed Detection', path: '/breed-detection' },
+    { label: 'Smart Shopping', path: '/smart-shopping' },
+    { label: 'Breeder Connect', path: '/breeder-connect' },
+  ];
+
+  const company = [
+    { label: 'About us', path: '/about-us' },
+    { label: 'Contact', path: '/about-us' },
+    { label: 'Privacy Policy', path: '/privacy-policy' },
+    { label: 'Terms', path: '/terms' },
+  ];
 
   return (
     <footer className="bg-gray-900 text-gray-300 pt-12 pb-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Grid layout for content */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-          
+
           {/* Left: Branding */}
           <div>
             <div className="flex items-center space-x-3 mb-4">
@@ -37,13 +49,13 @@ const Footer = () => {
               <h4 className="text-white font-semibold mb-3">Features</h4>
               <ul className="space-y-2 text-sm">
                 {features.map((item) => (
-                  <li key={item}>
-                    <a
-                      href="#"
+                  <li key={item.label}>
+                    <Link
+                      to={item.path}
                       className="relative inline-block text-gray-300 hover:text-white underline-grow transition-all duration-300"
                     >
-                      {item}
-                    </a>
+                      {item.label}
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -54,13 +66,13 @@ const Footer = () => {
               <h4 className="text-white font-semibold mb-3">Company</h4>
               <ul className="space-y-2 text-sm">
                 {company.map((item) => (
-                  <li key={item}>
-                    <a
-                      href="#"
+                  <li key={item.label}>
+                    <Link
+                      to={item.path}
                       className="relative inline-block text-gray-300 hover:text-white underline-grow transition-all duration-300"
                     >
-                      {item}
-                    </a>
+                      {item.label}
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -76,6 +88,7 @@ const Footer = () => {
                   key={index}
                   href="#"
                   className="p-2 border border-gray-500 rounded-full hover:bg-gradient-to-r from-purple-500 to-blue-500 hover:text-white transition-all duration-300"
+                  aria-label="Social Media Link"
                 >
                   <Icon className="h-5 w-5" />
                 </a>

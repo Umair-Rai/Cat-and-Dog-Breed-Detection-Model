@@ -1,23 +1,26 @@
 import './App.css';
-import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './Component/Header';
 import Footer from './Component/Footer';
-import BreedIdentifierSection from './Breed Detection/BreedIdentifierSection';
-import PetPhotoUpload from './Breed Detection/PetPhotoUpload';
-import PersonalizedRecommendations from './Breed Detection/PersonalizedRecommendations';
-import HowItWorks from './Breed Detection/HowItWorks';
+
+import Home from './Pages/Home';
+import About from './Pages/About';
+import BreedDetection from './Pages/BreedDetection';
+import Login from './Pages/login';
+import Admin from './Pages/Admin';
 function App() {
-  const [isUploaded, setIsUploaded] = useState(false);
   return (
-    <>
+    <Router>
       <Header />
-      <BreedIdentifierSection />
-      <PetPhotoUpload onUpload={() => setIsUploaded(true)} />
-      <PersonalizedRecommendations isUploaded={isUploaded} />
-      <HowItWorks/>
-      {/* rest of your app */}
-      <Footer/>
-    </>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/about-us" element={<About />} />
+        <Route path="/breed-detection" element={<BreedDetection />} />
+        <Route path='/Admin' element={<Admin />}/>
+        <Route path="/signin" element={<Login />} />
+      </Routes>
+      <Footer />
+    </Router>
   );
 }
 
