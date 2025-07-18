@@ -59,7 +59,7 @@ const CustomerManagement = () => {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="md:w-1/3"
         />
-        <div className="flex flex-wrap gap-3">
+        <div className="flex gap-3">
           <Select
             value={accountStatus}
             onChange={(e) => setAccountStatus(e.target.value)}

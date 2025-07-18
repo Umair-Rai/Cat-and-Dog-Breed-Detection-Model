@@ -1,5 +1,7 @@
+// src/pages/ViewAllProduct.jsx
 import React from 'react';
-import { Search, Plus, Grid3x3, Eye, Pencil, Trash2, Star } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Plus, Eye, Pencil, Trash2 } from 'lucide-react';
 
 const products = [
   {
@@ -10,12 +12,18 @@ const products = [
     inStock: true,
     category: 'Cat',
     ProductCategory: 'Food',
-    imageUrl: 'https://via.placeholder.com/60'
+    imageUrl: 'https://via.placeholder.com/60',
   },
-  // Add more products as needed...
+  // Add more products here as needed...
 ];
 
 export default function ViewAllProducts() {
+  const navigate = useNavigate();
+
+  const handleAddProduct = () => {
+    navigate('/admin/add-product');
+  };
+
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       {/* Header */}
@@ -44,7 +52,10 @@ export default function ViewAllProducts() {
         </div>
 
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl transition">
+          <button
+            onClick={handleAddProduct}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl transition"
+          >
             <Plus size={18} /> Add Product
           </button>
         </div>
@@ -81,7 +92,7 @@ export default function ViewAllProducts() {
                   </span>
                 </td>
                 <td className="p-4">{product.category}</td>
-                <td className="p-4">{product.ProductCategory }</td>
+                <td className="p-4">{product.ProductCategory}</td>
                 <td className="p-4 flex gap-2 items-center">
                   <Pencil className="text-blue-600 hover:scale-110 transition cursor-pointer" size={18} />
                   <Eye className="text-green-600 hover:scale-110 transition cursor-pointer" size={18} />
@@ -99,9 +110,7 @@ export default function ViewAllProducts() {
         <div className="flex gap-2">
           <button className="px-3 py-1 rounded border hover:bg-gray-100">Previous</button>
           {[1, 2, 3].map((n) => (
-            <button key={n} className="px-3 py-1 rounded border hover:bg-gray-100">
-              {n}
-            </button>
+            <button key={n} className="px-3 py-1 rounded border hover:bg-gray-100">{n}</button>
           ))}
           <button className="px-3 py-1 rounded border hover:bg-gray-100">Next</button>
         </div>

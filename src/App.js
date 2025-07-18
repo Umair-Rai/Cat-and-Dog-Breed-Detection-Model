@@ -6,8 +6,8 @@ import Home from './Pages/Home';
 import About from './Pages/About';
 import BreedDetection from './Pages/BreedDetection';
 import Login from './Pages/login';
-import Admin from './Pages/AdminSlider';
-import AdminSider from './Pages/AdminSlider';
+import Admin from './Pages/Admin';
+import AddProduct from './Admin/AddProduct';
 function App() {
   return (
     <Router>
@@ -16,7 +16,8 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/about-us" element={<About />} />
         <Route path="/breed-detection" element={<BreedDetection />} />
-        <Route path='/Admin' element={<AdminSider />} />
+        <Route path='/Admin' element={<Admin />} />
+        <Route path="/admin/add-product" element={<AddProduct />} />
         <Route path="/signin" element={<Login />} />
       </Routes>
       <Footer />
