@@ -7,7 +7,9 @@ import About from './Pages/About';
 import BreedDetection from './Pages/BreedDetection';
 import Login from './Pages/login';
 import Admin from './Pages/Admin';
-import AddProduct from './Admin/AddProduct';
+import AddProduct from './CRUD/AddProduct';
+import UpdateProduct from './CRUD/UpdateProduct';
+
 function App() {
   return (
     <Router>
@@ -18,6 +20,7 @@ function App() {
         <Route path="/breed-detection" element={<BreedDetection />} />
         <Route path='/Admin' element={<Admin />} />
         <Route path="/admin/add-product" element={<AddProduct />} />
+        <Route path="/admin/update-product/:id" element={<UpdateProduct />} />
         <Route path="/signin" element={<Login />} />
       </Routes>
       <Footer />

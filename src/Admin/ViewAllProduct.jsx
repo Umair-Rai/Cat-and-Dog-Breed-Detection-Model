@@ -1,5 +1,6 @@
 // src/pages/ViewAllProduct.jsx
 import React from 'react';
+import { Link } from "react-router-dom";
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Eye, Pencil, Trash2 } from 'lucide-react';
 
@@ -93,10 +94,13 @@ export default function ViewAllProducts() {
                 </td>
                 <td className="p-4">{product.category}</td>
                 <td className="p-4">{product.ProductCategory}</td>
-                <td className="p-4 flex gap-2 items-center">
-                  <Pencil className="text-blue-600 hover:scale-110 transition cursor-pointer" size={18} />
-                  <Eye className="text-green-600 hover:scale-110 transition cursor-pointer" size={18} />
-                  <Trash2 className="text-red-600 hover:scale-110 transition cursor-pointer" size={18} />
+                <td className="p-4">
+                  <div className="flex gap-2 items-center">
+                    <Link to={`/admin/update-product/${product.id}`}>
+                      <Pencil className="text-blue-600 hover:scale-110 transition cursor-pointer" size={18} />
+                    </Link>
+                    <Trash2 className="text-red-600 hover:scale-110 transition cursor-pointer" size={18} />
+                  </div>
                 </td>
               </tr>
             ))}
