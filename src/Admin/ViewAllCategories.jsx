@@ -1,6 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom'; // ✅ Added
 import { PencilIcon, TrashIcon, FolderIcon, ArchiveBoxIcon } from '@heroicons/react/24/outline';
-import { Cat, Dog } from 'lucide-react';
+import { Cat, Dog, Plus } from 'lucide-react'; // ✅ Plus icon added
 import { motion } from 'framer-motion';
 
 const parentCategories = [
@@ -52,6 +53,17 @@ const ViewAllCategories = () => {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800">All Categories</h1>
         <p className="text-gray-600">Manage pet categories and their subcategories</p>
+      </div>
+
+      {/* Add Category Button */}
+      <div className="flex justify-end mb-4"> {/* ✅ Button container */}
+        <Link
+          to="/admin/add-category"
+          className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition"
+        >
+          <Plus className="h-5 w-5" />
+          Add Category
+        </Link>
       </div>
 
       {/* Parent Category Table */}

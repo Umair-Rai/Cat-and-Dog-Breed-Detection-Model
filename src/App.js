@@ -19,7 +19,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/about-us" element={<About />} />
         <Route path="/breed-detection" element={<BreedDetection />} />
-        <Route path='/Admin' element={<Admin />} />
+        <Route path='/admin' element={<Admin />} />
         <Route path="/admin/add-product" element={<AddProduct />} />
         <Route path="/admin/update-product/:id" element={<UpdateProduct />} />
         <Route path="/admin/add-category" element={<AddCategory />} />
