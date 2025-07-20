@@ -1,7 +1,8 @@
 import './App.css';
+import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Header from './Component/Header';
-import Footer from './Component/Footer';
+import Header from './components/Header';
+import Footer from './components/Footer';
 import Home from './Pages/Home';
 import About from './Pages/About';
 import BreedDetection from './Pages/BreedDetection';
@@ -12,6 +13,13 @@ import UpdateProduct from './CRUD/UpdateProduct';
 import AddCategory from './CRUD/AddCategory';
 
 function App() {
+  const [message, setMessage] = useState("");
+  useEffect(() => {
+    fetch("/api/test") // This will go to http://localhost:5000/api/test
+      .then((res) => res.json())
+      .then((data) => setMessage(data.message))
+      .catch((err) => console.error("Error:", err));
+  }, []);
   return (
     <Router>
       <Header />

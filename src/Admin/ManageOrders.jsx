@@ -10,9 +10,9 @@ const SellerVerification = () => {
     <div className="p-6 font-inter bg-gray-50 min-h-screen">
       {/* Page Title */}
       <div className="mb-4">
-        <h1 className="text-2xl font-bold text-gray-800">Seller Verification</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Manage Orders</h1>
         <p className="text-sm text-gray-500">
-          Review and verify breeding service sellers applying to the platform.
+          Review and verify orders placed on the platform.
         </p>
       </div>
 
