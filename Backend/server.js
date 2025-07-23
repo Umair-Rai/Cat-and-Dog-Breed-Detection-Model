@@ -1,26 +1,29 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv'); // ← Add this
-const categoryRoutes = require('./routes/categoryRoutes');
+const express = require("express");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
+const cors = require("cors");
+
+dotenv.config();
+
 const app = express();
-
-dotenv.config(); // ← Load .env variables
-
-// Middleware
+app.use(cors());
 app.use(express.json());
 
-// Routes
-app.use('/api/categories', categoryRoutes);
-app.get('/', (req, res) => {
-  res.send('✅ Petify API is running!');
+const categoryRoutes = require("./routes/categoryRoutes");
+app.use("/api/categories", categoryRoutes);
+
+app.get("/", (req, res) => {
+  res.send("🚀 Pet API is running. Use /api/categories");
 });
 
-// Server
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => app.listen(process.env.PORT, () => {
-  console.log(`✅ Server running at http://localhost:${process.env.PORT}`);
-}))
-.catch(err => console.error('❌ MongoDB connection error:', err));
+mongoose
+  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log("✅ MongoDB Connected");
+    app.listen(process.env.PORT, () =>
+      console.log(`🚀 Server running on http://localhost:${process.env.PORT}`)
+    );
+  })
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err);
+  });
