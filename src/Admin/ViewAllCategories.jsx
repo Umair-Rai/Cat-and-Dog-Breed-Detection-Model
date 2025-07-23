@@ -13,23 +13,24 @@ const ViewAllCategories = () => {
         const res = await axios.get("http://localhost:5000/api/categories");
         const allCategories = res.data;
 
-        // Assuming response looks like:
-        // [{ pet_type: "Dog", category: "Toys" }, { pet_type: "Cat", category: null }]
-        const pet = [];
-        const product = [];
+        // Set full pet category objects
+        setPetCategories(allCategories);
 
-        allCategories.forEach((item) => {
-          if (!item.category) {
-            pet.push(item);
-          } else {
-            product.push(item);
-          }
+        // Flatten product subcategories
+        const flatSubcategories = [];
+        allCategories.forEach((cat) => {
+          cat.product_categories.forEach((subcategory) => {
+            flatSubcategories.push({
+              _id: `${cat._id}-${subcategory}`, // unique composite key
+              category: subcategory,
+              pet_type: cat.pet_type,
+            });
+          });
         });
 
-        setPetCategories(pet);
-        setProductSubcategories(product);
+        setProductSubcategories(flatSubcategories);
       } catch (err) {
-        console.error("Failed to fetch categories:", err);
+        console.error("❌ Failed to fetch categories:", err);
       }
     };
 
