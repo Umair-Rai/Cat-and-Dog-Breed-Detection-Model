@@ -11,6 +11,7 @@ import Admin from './Pages/Admin';
 import AddProduct from './CRUD/AddProduct';
 import UpdateProduct from './CRUD/UpdateProduct';
 import AddCategory from './CRUD/AddCategory';
+import UpdateCategory from './CRUD/UpdateCategory';
 
 function App() {
   const [message, setMessage] = useState("");
@@ -31,6 +32,7 @@ function App() {
         <Route path="/admin/add-product" element={<AddProduct />} />
         <Route path="/admin/update-product/:id" element={<UpdateProduct />} />
         <Route path="/admin/add-category" element={<AddCategory />} />
+        <Route path="/admin/update-category/:type/:categoryId/:subcategoryName?" element={<UpdateCategory />} />
         <Route path="/signin" element={<Login />} />
       </Routes>
       <Footer />
