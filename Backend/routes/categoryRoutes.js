@@ -105,5 +105,118 @@ router.post("/", async (req, res) => {
   }
 });
 
+// PUT to remove a product subcategory from a pet type
+router.put("/:catId/remove-category", async (req, res) => {
+  const { categoryToRemove } = req.body;
+  const { catId } = req.params;
+
+  if (!categoryToRemove || typeof categoryToRemove !== "string") {
+    return res.status(400).json({ error: "Invalid categoryToRemove" });
+  }
+
+  try {
+    const categoryDoc = await Category.findById(catId);
+    if (!categoryDoc) {
+      return res.status(404).json({ error: "Pet category not found" });
+    }
+
+    const originalLength = categoryDoc.product_categories.length;
+
+    categoryDoc.product_categories = categoryDoc.product_categories.filter(
+      (cat) => cat.toLowerCase() !== categoryToRemove.trim().toLowerCase()
+    );
+
+    if (categoryDoc.product_categories.length === originalLength) {
+      return res.status(404).json({ error: "Subcategory not found" });
+    }
+
+    await categoryDoc.save();
+
+    return res.status(200).json({
+      message: `✅ Subcategory '${categoryToRemove}' removed from '${categoryDoc.pet_type}'`,
+      data: categoryDoc,
+    });
+  } catch (err) {
+    console.error("❌ Error removing subcategory:", err);
+    return res.status(500).json({ error: "Server error", details: err.message });
+  }
+});
+// DELETE a full pet category by ID
+router.delete("/:id", async (req, res) => {
+  try {
+    const deleted = await Category.findByIdAndDelete(req.params.id);
+
+    if (!deleted) {
+      return res.status(404).json({ error: "Pet category not found" });
+    }
+
+    return res.status(200).json({ message: "✅ Pet category deleted successfully" });
+  } catch (err) {
+    console.error("❌ Failed to delete pet category:", err);
+    return res.status(500).json({ error: "Server error", details: err.message });
+  }
+});
+// Update pet category name
+router.put("/pet/:id", async (req, res) => {
+  const { pet_type } = req.body;
+
+  if (!pet_type || typeof pet_type !== "string") {
+    return res.status(400).json({ error: "Invalid pet type" });
+  }
+
+  try {
+    const updated = await Category.findByIdAndUpdate(
+      req.params.id,
+      { pet_type: pet_type.trim().toLowerCase() },
+      { new: true }
+    );
+    if (!updated) return res.status(404).json({ error: "Pet category not found" });
+
+    res.json({ message: "✅ Pet category updated", data: updated });
+  } catch (err) {
+    console.error("❌ Failed to update pet category:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Update a product subcategory
+router.patch("/product/:catId/subcategory", async (req, res) => {
+  const { oldSubcategory, newSubcategory } = req.body;
+
+  if (!oldSubcategory || !newSubcategory) {
+    return res.status(400).json({ error: "Both old and new subcategory names required" });
+  }
+
+  try {
+    const cat = await Category.findById(req.params.catId);
+    if (!cat) return res.status(404).json({ error: "Category not found" });
+
+    const index = cat.product_categories.findIndex(
+      (c) => c.toLowerCase() === oldSubcategory.trim().toLowerCase()
+    );
+
+    if (index === -1) {
+      return res.status(404).json({ error: "Old subcategory not found" });
+    }
+
+    // Prevent duplicates
+    if (
+      cat.product_categories.some(
+        (c) => c.toLowerCase() === newSubcategory.trim().toLowerCase()
+      )
+    ) {
+      return res.status(409).json({ error: "Subcategory name already exists" });
+    }
+
+    cat.product_categories[index] = newSubcategory.trim();
+    await cat.save();
+
+    res.json({ message: "✅ Subcategory updated", data: cat });
+  } catch (err) {
+    console.error("❌ Failed to update subcategory:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 
 module.exports = router;
