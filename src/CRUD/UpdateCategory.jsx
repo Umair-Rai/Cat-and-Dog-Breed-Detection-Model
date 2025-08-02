@@ -9,10 +9,12 @@ const UpdateCategory = () => {
   const navigate = useNavigate();
 
   const [petCategories, setPetCategories] = useState([]);
-  const [petCategoryName, setPetCategoryName] = useState("");
+  const [petTypeName, setPetTypeName] = useState(""); // for pet category edit
   const [subcategory, setSubcategory] = useState(subcategoryName || "");
-  const [prevSubcategory, setPrevSubcategory] = useState(subcategoryName || ""); // ✅ NEW
-  const [selectedPetType, setSelectedPetType] = useState("");
+  const [prevSubcategory, setPrevSubcategory] = useState(subcategoryName || "");
+  const [sourcePetTypeId, setSourcePetTypeId] = useState(""); // ✅ original source category ID
+  const [selectedTargetPetTypeId, setSelectedTargetPetTypeId] = useState(""); // 🆕 destination category
+  const [selectedTargetPetTypeName, setSelectedTargetPetTypeName] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,15 +25,19 @@ const UpdateCategory = () => {
 
         if (type === "pet") {
           const current = res.data.find((c) => c._id === categoryId);
-          if (current) setPetCategoryName(current.pet_type);
-        } else if (type === "subcategory") {
+          if (current) setPetTypeName(current.pet_type);
+        }
+
+        if (type === "subcategory") {
           const current = res.data.find((c) =>
             c.product_categories.includes(subcategoryName)
           );
           if (current) {
-            setSelectedPetType(current._id);
+            setSourcePetTypeId(current._id); // ✅ actual location of the subcategory
+            setSelectedTargetPetTypeId(current._id); // pre-select it in dropdown
+            setSelectedTargetPetTypeName(current.pet_type);
             setSubcategory(subcategoryName);
-            setPrevSubcategory(subcategoryName); // ✅ LOCK OLD NAME
+            setPrevSubcategory(subcategoryName);
           }
         }
       } catch (err) {
@@ -45,38 +51,41 @@ const UpdateCategory = () => {
   }, [type, categoryId, subcategoryName]);
 
   const handleSave = async () => {
-    if (type === "pet") {
-      if (!petCategoryName.trim()) return toast.error("❗ Enter a category name");
+    try {
+      if (type === "pet") {
+        if (!petTypeName.trim()) return toast.error("❗ Enter a category name");
 
-      try {
         await axios.put(
           `http://localhost:5000/api/categories/pet/${categoryId}`,
-          { pet_type: petCategoryName.trim() }
+          { pet_type: petTypeName.trim() }
         );
         toast.success("✅ Pet category updated");
-        navigate("/admin/categories");
-      } catch (err) {
-        console.error("❌ Pet update error:", err?.response?.data || err);
-        toast.error("❌ Update failed");
-      }
-    } else {
-      if (!subcategory.trim() || !selectedPetType)
-        return toast.error("❗ All fields required");
+      } else {
+        if (
+          !subcategory.trim() ||
+          !sourcePetTypeId ||
+          !selectedTargetPetTypeId ||
+          !selectedTargetPetTypeName.trim()
+        ) {
+          return toast.error("❗ All fields are required");
+        }
 
-      try {
         await axios.patch(
-          `http://localhost:5000/api/categories/product/${selectedPetType}/subcategory`,
+          `http://localhost:5000/api/categories/product/${sourcePetTypeId}/subcategory`,
           {
-            oldSubcategory: prevSubcategory.trim(), // ✅ USE LOCKED VALUE
+            oldSubcategory: prevSubcategory.trim(),
             newSubcategory: subcategory.trim(),
+            newPetType: selectedTargetPetTypeName.trim(),
           }
         );
-        toast.success("✅ Subcategory updated");
-        navigate("/admin/categories");
-      } catch (err) {
-        console.error("❌ Subcategory update error:", err?.response?.data || err);
-        toast.error("❌ Subcategory update failed");
+
+        toast.success("✅ Subcategory updated and moved if needed");
       }
+
+      navigate("/admin");
+    } catch (err) {
+      const msg = err?.response?.data?.error || "❌ Update failed";
+      toast.error(msg);
     }
   };
 
@@ -97,19 +106,24 @@ const UpdateCategory = () => {
             <input
               type="text"
               className="w-full border rounded-lg p-3"
-              value={petCategoryName}
-              onChange={(e) => setPetCategoryName(e.target.value)}
+              value={petTypeName}
+              onChange={(e) => setPetTypeName(e.target.value)}
             />
           </div>
         ) : (
           <div className="space-y-4">
             <label className="block text-sm font-medium text-gray-700">
-              Pet Category
+              Move To Pet Type
             </label>
             <select
               className="w-full border rounded-lg p-3"
-              value={selectedPetType}
-              onChange={(e) => setSelectedPetType(e.target.value)}
+              value={selectedTargetPetTypeId}
+              onChange={(e) => {
+                const selectedId = e.target.value;
+                const selectedName = petCategories.find((cat) => cat._id === selectedId)?.pet_type || "";
+                setSelectedTargetPetTypeId(selectedId);
+                setSelectedTargetPetTypeName(selectedName);
+              }}
             >
               <option value="">Select Pet Type</option>
               {petCategories.map((cat) => (
@@ -133,7 +147,7 @@ const UpdateCategory = () => {
 
         <div className="flex justify-end space-x-4 mt-6">
           <button
-            onClick={() => navigate("/admin/categories")}
+            onClick={() => navigate("/admin")}
             className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400"
           >
             Cancel
