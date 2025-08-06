@@ -14,12 +14,15 @@ const categoryRoutes = require("./routes/categoryRoutes");
 const adminRoutes = require("./routes/adminRoutes"); // ✅ Add this line
 const productRoutes = require("./routes/productRoutes");
 const customerRoutes = require("./routes/customerRoutes");
+const sellerRoutes = require("./routes/sellerRoutes");
 
 
 app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/admin", adminRoutes); // ✅ Mount the admin routes
 app.use("/api/customers", customerRoutes);
+app.use("/api/sellers", sellerRoutes);
+
 // ✅ Default test route
 app.get("/", (req, res) => {
   res.send("🚀 Pet API is running. Use /api/categories or /api/admin");

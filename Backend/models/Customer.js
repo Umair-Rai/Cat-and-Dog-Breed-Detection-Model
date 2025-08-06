@@ -2,18 +2,10 @@ const mongoose = require("mongoose");
 
 const cartItemSchema = new mongoose.Schema(
   {
-    product_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Product", // should match your product model name
-      required: true
-    },
-    quantity: {
-      type: Number,
-      default: 1,
-      min: 1
-    }
+    product_id: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
+    quantity: { type: Number, default: 1 }
   },
-  { _id: false } // prevent auto _id for each cart item
+  { _id: false }
 );
 
 const customerSchema = new mongoose.Schema(
@@ -21,39 +13,32 @@ const customerSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     email: {
       type: String,
       required: true,
+      unique: true,
       lowercase: true,
-      unique: true
     },
     phone: {
-      type: String
+      type: String,
     },
     address: {
       type: String,
-      default: ""
+      default: "",
     },
     password: {
       type: String,
-      required: true
-    },
-    account_type: {
-      type: String,
-      enum: ["customer"],
-      required: true
+      required: true,
     },
     refresh_token: {
-      type: String
+      type: String,
     },
-
-    // ✅ CART FIELD (array of product + quantity)
     cart: {
       type: [cartItemSchema],
-      default: []
-    }
+      default: [],
+    },
   },
   { timestamps: true }
 );
