@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User } from 'lucide-react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 export default function AuthSlidePanel() {
   const [isSignIn, setIsSignIn] = useState(true); // true = login form, false = signup form
+  const navigate = useNavigate();
 
   const [signup, setSignup] = useState({
     name: '',
     email: '',
     phone: '',
+    address: '',
     password: '',
     confirm: '',
     Account_type: 'Customer',
@@ -27,6 +30,7 @@ export default function AuthSlidePanel() {
         name: signup.name,
         email: signup.email,
         phone: signup.phone,
+        address: signup.address,
         password: signup.password,
         account_type:
           signup.Account_type.toLowerCase().includes("customer") ? "customer" : "",
@@ -35,7 +39,7 @@ export default function AuthSlidePanel() {
       setIsSignIn(true); // switch to login
       // reset form:
       setSignup({
-        name: '', email: '', phone: '', password: '', confirm: '', Account_type: 'Customer', image: null
+        name: '', email: '', phone: '', address:'', password: '', confirm: '', Account_type: 'Customer', image: null
       });
     } catch (err) {
       alert(err.response?.data?.error || "Signup failed");
@@ -53,7 +57,7 @@ export default function AuthSlidePanel() {
       alert(res.data.message);
       localStorage.setItem("token", res.data.accessToken);
       // TODO: redirect after login
-      console.log(res.data.user);
+      navigate('/');
     } catch (err) {
       alert(err.response?.data?.error || "Login failed");
     }
