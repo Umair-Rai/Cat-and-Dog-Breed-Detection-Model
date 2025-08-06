@@ -10,7 +10,7 @@ const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
 
 // =========================== SIGN-UP ===========================
 router.post("/signup", async (req, res) => {
-  const { name, email, phone, password, account_type } = req.body;
+  const { name, email, phone, address, password, account_type } = req.body;
 
   if (account_type !== "customer") {
     return res.status(400).json({ error: "Only customer account type is allowed" });
@@ -26,6 +26,7 @@ router.post("/signup", async (req, res) => {
       name,
       email,
       phone,
+      address,
       password: hashedPass,
       account_type,       // ➕ must be "customer"
     });
