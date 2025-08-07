@@ -35,7 +35,7 @@ export default function AuthSlidePanel() {
           >
             <h2 className="text-2xl font-bold">Create Account</h2>
             <Input icon={<User />} name="name" placeholder="Full Name" value={signup.name} onChange={e => setSignup({ ...signup, name: e.target.value })} />
-            <Input icon={<Mail />} name="email" type="email" placeholder="Email" value={signup.email} onChange={e => setSignup({ ...signup, email: e.target.value })} />
+            <Input icon={<Mail />} name="email" type="email" placeholder="EmailSDSD" value={signup.email} onChange={e => setSignup({ ...signup, email: e.target.value })} />
             <Input icon={<Lock />} name="password" type="password" placeholder="Password" value={signup.password} onChange={e => setSignup({ ...signup, password: e.target.value })} />
             <Input icon={<Lock />} name="confirm" type="password" placeholder="Confirm Password" value={signup.confirm} onChange={e => setSignup({ ...signup, confirm: e.target.value })} />
             <select

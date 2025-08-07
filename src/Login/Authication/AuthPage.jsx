@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Mail, Lock, User } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../../context/AuthContext';
 
 export default function AuthSlidePanel() {
   const [isSignIn, setIsSignIn] = useState(true);
   const navigate = useNavigate();
   const [loginType, setLoginType] = useState("Customer Account");
-
+  const { setUser } = useContext(AuthContext);
   const [signup, setSignup] = useState({
     name: '',
     email: '',
@@ -54,28 +55,38 @@ export default function AuthSlidePanel() {
   };
 
   // ---------------------------- LOGIN (customer) ----------------------------
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-       let res;
-       if (loginType  === "Seller Account") {
-            res = await axios.post("http://localhost:5000/api/sellers/login", {
-            email: login.email,
-            password: login.password
-      });}
-        else {
-          res = await axios.post("http://localhost:5000/api/customers/login", {
-          email: login.email,
-          password: login.password
-      });}
-      alert(res.data.message);
-      localStorage.setItem('token', res.data.accessToken);
-      localStorage.setItem('user', JSON.stringify(res.data.user));
-      navigate('/');
-    } catch (err) {
-      alert(err.response?.data?.error || 'Login failed');
+ const handleLogin = async (e) => {
+  e.preventDefault();
+  try {
+    let res;
+    if (loginType === "Seller Account") {
+      res = await axios.post("http://localhost:5000/api/sellers/login", {
+        email: login.email,
+        password: login.password,
+      });
+    } else {
+      res = await axios.post("http://localhost:5000/api/customers/login", {
+        email: login.email,
+        password: login.password,
+      });
     }
-  };
+
+    alert(res.data.message);
+
+    // ✅ Store token and user
+    localStorage.setItem('token', res.data.accessToken);
+    localStorage.setItem('user', JSON.stringify(res.data.user));
+
+    // ✅ Update global context (so NavBar etc. knows who is logged in)
+    setUser(res.data.user);
+
+    // ✅ Redirect
+    navigate('/');
+  } catch (err) {
+    alert(err.response?.data?.error || 'Login failed');
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#7D5FFF] to-[#5E9BFF] flex items-center justify-center p-4">

@@ -15,7 +15,7 @@ const Header = ({ user }) => {
     { label: 'Breed Detector', path: '/breed-detection' },
     { label: 'E-Store', path: '/e-store' },
     { label: 'Breeder Connect', path: '/breeder-connect' },
-    { label: 'About us', path: '/about-us' },
+    { label: 'About uASDs', path: '/about-us' },
   ];
 
   return (

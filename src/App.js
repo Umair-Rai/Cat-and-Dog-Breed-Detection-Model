@@ -12,7 +12,7 @@ import AddProduct from './CRUD/AddProduct';
 import UpdateProduct from './CRUD/UpdateProduct';
 import AddCategory from './CRUD/AddCategory';
 import UpdateCategory from './CRUD/UpdateCategory';
-
+import { AuthProvider } from './context/AuthContext';
 function App() {
   const [message, setMessage] = useState("");
   useEffect(() => {
