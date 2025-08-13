@@ -12,7 +12,7 @@ import AddProduct from './Pages/CRUD/AddProduct';
 import UpdateProduct from './Pages/CRUD/UpdateProduct';
 import AddCategory from './Pages/CRUD/AddCategory';
 import UpdateCategory from './Pages/CRUD/UpdateCategory';
-
+import Product from './Pages/Product';
 // Import profile pages
 import CustomerProfile from './Pages/Profile/CustomerProfile';
 import SellerProfile from './Pages/Profile/SellerProfile'; // make sure you create this
@@ -40,7 +40,7 @@ function App() {
         <Route path="/admin/add-category" element={<AddCategory />} />
         <Route path="/admin/update-category/:type/:categoryId/:subcategoryName?" element={<UpdateCategory />} />
         <Route path="/signin" element={<AuthPage />} />
-
+        <Route path="/products" element={<Product />} />
         {/* Profile Routes */}
         <Route path="/profile/customer" element={<CustomerProfile />} />
         <Route path="/profile/seller" element={<SellerProfile />} />
