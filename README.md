@@ -18,7 +18,7 @@ Welcome to the **Petify AI** project — an intelligent pet breed detection syst
   - [Oxford-IIIT Pet Dataset](https://www.robots.ox.ac.uk/~vgg/data/pets/)
 - 🧠 **Model Accuracy**: Achieved **87.5%** accuracy on the validation set
 - 💻 **Framework**: TensorFlow/Keras
-- 🎯 **Model Type**: Transfer Learning using **EfficientNetB0**
+- 🎯 **Model Type**: Transfer Learning using **Vision Transformer (ViT)**
 
 ---
 
