@@ -28,21 +28,10 @@ We leveraged **transfer learning** by fine-tuning the EfficientNetB0 model, know
 
 - Input layer for image resizing
 - Data augmentation layers (rotation, flip, zoom)
-- EfficientNetB0 base (pre-trained on ImageNet)
+- Vision Transformer (ViT) base (pre-trained on ImageNet)
 - Global average pooling
 - Dense layers with Dropout
 - Final softmax classification layer
 
 ---
 
-## 📂 Folder Structure
-
-```bash
-├── data/                      # Image data (train/test split)
-├── notebooks/                 # Jupyter Notebooks for EDA, training, evaluation
-├── models/                    # Saved model weights
-├── utils/                     # Helper scripts
-├── petify_ai_train.py         # Main training script
-├── requirements.txt
-├── README.md
-└── results/                   # Accuracy/loss plots, confusion matrix
