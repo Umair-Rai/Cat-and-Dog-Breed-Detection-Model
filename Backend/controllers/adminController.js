@@ -1,5 +1,6 @@
 const Admin = require("../models/Admin");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 
 // Generate JWT
 const generateToken = (admin) => {
@@ -63,6 +64,28 @@ exports.loginAdmin = async (req, res) => {
     res.json({ token, admin });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+exports.updatePassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const admin = await Admin.findById(req.params.id);
+
+    if (!admin) return res.status(404).json({ error: "Admin not found" });
+
+    // Compare old password with hashed password
+    const isMatch = await bcrypt.compare(oldPassword, admin.admin_pass);
+    if (!isMatch) return res.status(400).json({ error: "Old password is incorrect" });
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    admin.admin_pass = await bcrypt.hash(newPassword, salt);
+
+    await admin.save();
+    res.json({ message: "Password updated successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
 
