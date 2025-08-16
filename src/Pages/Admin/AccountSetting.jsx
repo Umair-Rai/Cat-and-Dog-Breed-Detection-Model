@@ -6,31 +6,38 @@ import "react-toastify/dist/ReactToastify.css";
 
 const AccountSettings = () => {
   const navigate = useNavigate();
-  const adminId = localStorage.getItem("adminId"); // 👈 make sure you store this on login
+  const adminToken = localStorage.getItem("adminToken");
+  const adminData = JSON.parse(localStorage.getItem("adminData") || "{}");
+  const adminId = adminData?._id;
 
   const [admin, setAdmin] = useState({ admin_name: "", admin_email: "" });
-  const [passwords, setPasswords] = useState({
-    old: "",
-    new: "",
-    confirm: "",
-  });
+  const [passwords, setPasswords] = useState({ old: "", new: "", confirm: "" });
 
   // ✅ Load current admin info
   useEffect(() => {
+    if (!adminToken || !adminId) {
+      navigate("/admin/login");
+      return;
+    }
+
     const fetchAdmin = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/admin/${adminId}`);
-        setAdmin(res.data);
+        const res = await axios.get(`http://localhost:5000/api/admins/${adminId}`, {
+          headers: { Authorization: `Bearer ${adminToken}` },
+        });
+        setAdmin(res.data); 
       } catch (err) {
         toast.error("❌ Failed to fetch admin data");
       }
     };
     fetchAdmin();
-  }, [adminId]);
+  }, [adminId, adminToken, navigate]);
 
   const handleProfileUpdate = async () => {
     try {
-      await axios.put(`http://localhost:5000/api/admin/${adminId}`, admin);
+      await axios.put(`http://localhost:5000/api/admins/${adminId}`, admin, {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
       toast.success("✅ Profile updated");
     } catch (err) {
       toast.error("❌ Failed to update profile");
@@ -43,10 +50,11 @@ const AccountSettings = () => {
     if (newPass !== confirm) return toast.error("❌ Passwords do not match");
 
     try {
-      await axios.patch(`http://localhost:5000/api/admin/password/${adminId}`, {
-        oldPassword: old,
-        newPassword: newPass,
-      });
+      await axios.patch(
+        `http://localhost:5000/api/admins/password/${adminId}`,
+        { oldPassword: old, newPassword: newPass },
+        { headers: { Authorization: `Bearer ${adminToken}` } }
+      );
       toast.success("✅ Password updated");
       setPasswords({ old: "", new: "", confirm: "" });
     } catch (err) {
@@ -59,18 +67,22 @@ const AccountSettings = () => {
     if (!confirmDelete) return;
 
     try {
-      await axios.delete(`http://localhost:5000/api/admin/${adminId}`);
+      await axios.delete(`http://localhost:5000/api/admins/${adminId}`, {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
       toast.success("✅ Account deleted");
-      localStorage.removeItem("adminId");
-      setTimeout(() => navigate("/login"), 1000);
+      localStorage.removeItem("adminToken");
+      localStorage.removeItem("adminData");
+      setTimeout(() => navigate("/admin/login"), 1000);
     } catch (err) {
       toast.error("❌ Failed to delete account");
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("adminId");
-    navigate("/login");
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminData");
+    navigate("/admin/login");
   };
 
   return (

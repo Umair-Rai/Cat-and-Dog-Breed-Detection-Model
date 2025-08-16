@@ -15,13 +15,14 @@ import UpdateCategory from './Pages/CRUD/UpdateCategory';
 import ProductListingPage from './Pages/Product/product';
 import AdminLogin from './Pages/Admin/Adminlogin';
 import CustomerProfile from './Pages/Profile/CustomerProfile';
-import SellerProfile from './Pages/Profile/SellerProfile'; // make sure you create this
+import SellerProfile from './Pages/Profile/SellerProfile';
+import AdminRoute from './components/AdminRoute';
 
 function App() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    fetch("/api/test") // This will go to http://localhost:5000/api/test
+    fetch("/api/test")
       .then((res) => res.json())
       .then((data) => setMessage(data.message))
       .catch((err) => console.error("Error:", err));
@@ -31,19 +32,57 @@ function App() {
     <Router>
       <Header />
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/about-us" element={<About />} />
         <Route path="/breed-detection" element={<BreedDetection />} />
-        <Route path='/admin' element={<Admin />} />
-        <Route path="/admin/add-product" element={<AddProduct />} />
-        <Route path="/admin/update-product/:id" element={<UpdateProduct />} />
-        <Route path="/admin/add-category" element={<AddCategory />} />
-        <Route path="/admin/update-category/:type/:categoryId/:subcategoryName?" element={<UpdateCategory />} />
         <Route path="/signin" element={<AuthPage />} />
         <Route path="/products" element={<ProductListingPage />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/profile/customer" element={<CustomerProfile />} />
         <Route path="/profile/seller" element={<SellerProfile />} />
+
+        {/* Admin Protected Routes */}
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <Admin />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/add-product"
+          element={
+            <AdminRoute>
+              <AddProduct />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/update-product/:id"
+          element={
+            <AdminRoute>
+              <UpdateProduct />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/add-category"
+          element={
+            <AdminRoute>
+              <AddCategory />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/update-category/:type/:categoryId/:subcategoryName?"
+          element={
+            <AdminRoute>
+              <UpdateCategory />
+            </AdminRoute>
+          }
+        />
       </Routes>
       <Footer />
     </Router>

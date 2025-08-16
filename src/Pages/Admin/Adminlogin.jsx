@@ -23,7 +23,7 @@ export default function AdminLogin() {
     localStorage.setItem("adminToken", res.data.token);
     localStorage.setItem("adminData", JSON.stringify(res.data.admin));
 
-    navigate("/admin/dashboard");
+    navigate("/admin");
   } catch (err) {
     setError(err.response?.data?.message || "Login failed");
   }
