@@ -13,7 +13,7 @@ router.get("/me", verifyToken("admin"), (req, res) => {
 });
 router.patch(
   "/password/:id",
-  verifyToken,
+  verifyToken(),
   adminController.updatePassword
 );
 // CRUD (admin-only)
