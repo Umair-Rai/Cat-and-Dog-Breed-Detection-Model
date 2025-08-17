@@ -60,7 +60,7 @@ function App() {
           }
         />
         <Route
-          path="/admin/update-product/:id"
+          path="/admin/update-product/:productId"
           element={
             <AdminRoute>
               <UpdateProduct />

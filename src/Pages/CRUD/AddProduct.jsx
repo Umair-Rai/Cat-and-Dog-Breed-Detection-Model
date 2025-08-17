@@ -82,19 +82,58 @@ const AddProduct = () => {
   };
 
   const handleFormChange = (field, value) => {
-    setForm({ ...form, [field]: value });
+    // Reset product_category when pet_type_id changes
+    if (field === 'pet_type_id') {
+      setForm({ ...form, [field]: value, product_category: '' });
+    } else {
+      setForm({ ...form, [field]: value });
+    }
   };
 
   const handleSubmit = async (isDraft = false) => {
     try {
       setLoading(true);
       
-      // Validate required fields
-      if (!form.name || !form.price || !form.stock || !form.pet_type_id || !form.product_category) {
-        toast.error('Please fill in all required fields');
+      // Debug: Log form values before validation
+      console.log('Form validation check:', {
+        name: `"${form.name}" (length: ${form.name?.length})`,
+        price: `"${form.price}" (type: ${typeof form.price})`,
+        stock: `"${form.stock}" (type: ${typeof form.stock})`,
+        pet_type_id: `"${form.pet_type_id}" (length: ${form.pet_type_id?.length})`,
+        product_category: `"${form.product_category}" (length: ${form.product_category?.length})`
+      });
+      
+      // Validate required fields with improved logic
+      const requiredFields = {
+        name: form.name?.trim(),
+        price: form.price?.toString().trim(),
+        stock: form.stock?.toString().trim(),
+        pet_type_id: form.pet_type_id?.trim(),
+        product_category: form.product_category?.trim()
+      };
+      
+      const emptyFields = Object.entries(requiredFields)
+        .filter(([key, value]) => !value || value === '')
+        .map(([key]) => key);
+      
+      if (emptyFields.length > 0) {
+        console.log('Empty fields:', emptyFields);
+        console.log('Form values:', form);
+        toast.error(`Please fill in all required fields: ${emptyFields.join(', ')}`);
         return;
       }
-
+      
+      // Additional validation for numeric fields
+      if (isNaN(parseFloat(form.price)) || parseFloat(form.price) <= 0) {
+        toast.error('Please enter a valid price greater than 0');
+        return;
+      }
+      
+      if (isNaN(parseInt(form.stock)) || parseInt(form.stock) < 0) {
+        toast.error('Please enter a valid stock quantity');
+        return;
+      }
+      
       // Prepare form data
       const formData = new FormData();
       
@@ -162,20 +201,46 @@ const AddProduct = () => {
     label: cat.pet_type
   }));
 
-  const productCategoryOptions = [
-    { value: 'food', label: 'Food' },
-    { value: 'toys', label: 'Toys' },
-    { value: 'accessories', label: 'Accessories' },
-    { value: 'health', label: 'Health & Care' },
-    { value: 'grooming', label: 'Grooming' },
+  // Dynamic product category options based on selected pet type
+  const getProductCategoryOptions = () => {
+    if (!form.pet_type_id) {
+      return [];
+    }
+    
+    const selectedCategory = categories.find(cat => cat._id === form.pet_type_id);
+    if (!selectedCategory || !selectedCategory.product_categories) {
+      return [];
+    }
+    
+    return selectedCategory.product_categories.map(category => ({
+      value: category,
+      label: category.charAt(0).toUpperCase() + category.slice(1) // Capitalize first letter
+    }));
+  };
+
+  const productCategoryOptions = getProductCategoryOptions();
+
+  // Remove this duplicate static array (lines 223-229):
+  // const productCategoryOptions = [
+  //   { value: 'food', label: 'Food' },
+  //   { value: 'toys', label: 'Toys' },
+  //   { value: 'accessories', label: 'Accessories' },
+  //   { value: 'health', label: 'Health & Care' },
+  //   { value: 'grooming', label: 'Grooming' },
+  // ];
+
+  const statusOptions = [
+    { value: true, label: 'Active' },
+    { value: false, label: 'Inactive' }
   ];
 
   const seasonOptions = [
-    { value: '', label: 'No Season' },
-    { value: 'summer', label: 'Summer' },
-    { value: 'winter', label: 'Winter' },
+    { value: '', label: 'Select Season' },
     { value: 'spring', label: 'Spring' },
+    { value: 'summer', label: 'Summer' },
     { value: 'autumn', label: 'Autumn' },
+    { value: 'winter', label: 'Winter' },
+    { value: 'all_year', label: 'All Year' }
   ];
 
   return (

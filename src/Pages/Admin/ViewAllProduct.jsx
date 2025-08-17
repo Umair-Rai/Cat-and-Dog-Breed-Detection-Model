@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import {
   PlusIcon,
   EyeIcon,
@@ -26,6 +28,7 @@ export default function ViewAllProducts() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedPetType, setSelectedPetType] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -39,6 +42,7 @@ export default function ViewAllProducts() {
       setProducts(res.data);
     } catch (err) {
       console.error("❌ Failed to fetch products", err);
+      toast.error("Failed to fetch products");
     } finally {
       setLoading(false);
     }
@@ -61,44 +65,42 @@ export default function ViewAllProducts() {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
         await axios.delete(`http://localhost:5000/api/products/${productId}`);
-        fetchProducts(); // Refresh the list
+        fetchProducts();
+        toast.success("Product deleted successfully");
       } catch (err) {
         console.error("❌ Failed to delete product", err);
+        toast.error("Failed to delete product");
       }
     }
   };
 
-  // Filter and sort products
-  const filteredProducts = products
-    .filter(product => {
-      const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           product.brand?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = selectedCategory === "all" || product.product_category === selectedCategory;
-      const matchesPetType = selectedPetType === "all" || product.pet_type_id?.pet_type === selectedPetType;
-      const matchesStock = stockFilter === "all" || 
-                          (stockFilter === "in_stock" && product.stock > 0) ||
-                          (stockFilter === "out_of_stock" && product.stock === 0);
+  const handleStatusToggle = async (productId, currentStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(
+        `http://localhost:5000/api/products/${productId}/status`,
+        { is_active: !currentStatus },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
       
-      return matchesSearch && matchesCategory && matchesPetType && matchesStock;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case "name":
-          return a.name.localeCompare(b.name);
-        case "price_low":
-          return a.price - b.price;
-        case "price_high":
-          return b.price - a.price;
-        case "stock":
-          return b.stock - a.stock;
-        case "rating":
-          return b.avg_rating - a.avg_rating;
-        case "newest":
-        default:
-          return new Date(b.createdAt) - new Date(a.createdAt);
-      }
-    });
+      setProducts(prev => prev.map(product => 
+        product._id === productId 
+          ? { ...product, is_active: !currentStatus }
+          : product
+      ));
+      
+      toast.success(`Product ${!currentStatus ? 'activated' : 'deactivated'} successfully`);
+    } catch (error) {
+      console.error('Error updating product status:', error);
+      toast.error('Failed to update product status');
+    }
+  };
 
+  // Filter options
   const categoryOptions = [
     { value: "all", label: "All Categories" },
     { value: "food", label: "Food" },
@@ -119,6 +121,12 @@ export default function ViewAllProducts() {
     { value: "out_of_stock", label: "Out of Stock" },
   ];
 
+  const statusFilterOptions = [
+    { value: 'all', label: 'All Status' },
+    { value: 'active', label: 'Active Only' },
+    { value: 'inactive', label: 'Inactive Only' }
+  ];
+
   const sortOptions = [
     { value: "newest", label: "Newest First" },
     { value: "name", label: "Name A-Z" },
@@ -127,6 +135,40 @@ export default function ViewAllProducts() {
     { value: "stock", label: "Stock: High to Low" },
     { value: "rating", label: "Rating: High to Low" },
   ];
+
+  // Filter and sort products
+  const filteredProducts = products
+    .filter(product => {
+      const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           product.brand?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = selectedCategory === "all" || product.product_category === selectedCategory;
+      const matchesPetType = selectedPetType === "all" || product.pet_type_id?.pet_type === selectedPetType;
+      const matchesStock = stockFilter === "all" || 
+                          (stockFilter === "in_stock" && product.stock > 0) ||
+                          (stockFilter === "out_of_stock" && product.stock === 0);
+      const matchesStatus = statusFilter === "all" ||
+                           (statusFilter === "active" && product.is_active) ||
+                           (statusFilter === "inactive" && !product.is_active);
+      
+      return matchesSearch && matchesCategory && matchesPetType && matchesStock && matchesStatus;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "price_low":
+          return a.price - b.price;
+        case "price_high":
+          return b.price - a.price;
+        case "stock":
+          return b.stock - a.stock;
+        case "rating":
+          return b.avg_rating - a.avg_rating;
+        case "newest":
+        default:
+          return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+    });
 
   if (loading) {
     return (
@@ -139,6 +181,8 @@ export default function ViewAllProducts() {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
+      <ToastContainer position="top-right" autoClose={3000} />
+      
       {/* Header Section */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
@@ -231,7 +275,7 @@ export default function ViewAllProducts() {
         
         {/* Expandable Filters */}
         {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4 pt-4 border-t">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4 pt-4 border-t">
             <Select
               options={categoryOptions}
               value={selectedCategory}
@@ -249,6 +293,12 @@ export default function ViewAllProducts() {
               value={stockFilter}
               onChange={(e) => setStockFilter(e.target.value)}
               placeholder="Stock Status"
+            />
+            <Select
+              options={statusFilterOptions}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              placeholder="Product Status"
             />
             <Select
               options={sortOptions}
@@ -270,7 +320,7 @@ export default function ViewAllProducts() {
                 <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
                   {product.images && product.images.length > 0 ? (
                     <img
-                      src={product.images[0]}
+                      src={`http://localhost:5000/uploads/${product.images[0]}`}
                       alt={product.name}
                       className="w-full h-full object-cover"
                     />
@@ -285,11 +335,21 @@ export default function ViewAllProducts() {
                     -{product.discount}%
                   </div>
                 )}
-                <div className="absolute top-2 right-2">
+                <div className="absolute top-2 right-2 flex gap-2">
                   <Badge 
                     text={product.stock > 0 ? 'In Stock' : 'Out of Stock'} 
                     status={product.stock > 0 ? 'delivered' : 'cancelled'} 
                   />
+                  <button
+                    onClick={() => handleStatusToggle(product._id, product.is_active)}
+                    className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+                      product.is_active 
+                        ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                        : 'bg-red-100 text-red-800 hover:bg-red-200'
+                    }`}
+                  >
+                    {product.is_active ? 'Active' : 'Inactive'}
+                  </button>
                 </div>
               </div>
               
@@ -389,73 +449,106 @@ export default function ViewAllProducts() {
                   <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
                     {selectedProduct.images && selectedProduct.images.length > 0 ? (
                       <img
-                        src={selectedProduct.images[0]}
+                        src={`http://localhost:5000/uploads/${selectedProduct.images[0]}`}
                         alt={selectedProduct.name}
                         className="w-full h-full object-cover"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <PhotoIcon className="h-16 w-16 text-gray-400" />
+                        <PhotoIcon className="h-12 w-12 text-gray-400" />
                       </div>
                     )}
                   </div>
+                  
+                  {/* Additional Images */}
                   {selectedProduct.images && selectedProduct.images.length > 1 && (
                     <div className="grid grid-cols-4 gap-2">
                       {selectedProduct.images.slice(1, 5).map((image, index) => (
                         <div key={index} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                          <img src={image} alt={`${selectedProduct.name} ${index + 2}`} className="w-full h-full object-cover" />
+                          <img
+                            src={`http://localhost:5000/uploads/${image}`}
+                            alt={`${selectedProduct.name} ${index + 2}`}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
                 
-                {/* Product Info */}
+                {/* Product Information */}
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">{selectedProduct.name}</h3>
-                    <p className="text-gray-600">{selectedProduct.brand}</p>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{selectedProduct.name}</h3>
+                    <p className="text-lg text-gray-600">{selectedProduct.brand}</p>
                   </div>
                   
                   <div className="flex items-center gap-4">
-                    <span className="text-2xl font-bold text-purple-600">SAR {selectedProduct.price}</span>
+                    <span className="text-3xl font-bold text-purple-600">SAR {selectedProduct.price}</span>
                     {selectedProduct.discount > 0 && (
-                      <Badge text={`${selectedProduct.discount}% OFF`} status="shipped" />
+                      <span className="text-lg text-gray-500 line-through">
+                        SAR {(selectedProduct.price / (1 - selectedProduct.discount / 100)).toFixed(2)}
+                      </span>
+                    )}
+                    {selectedProduct.discount > 0 && (
+                      <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-sm font-semibold">
+                        -{selectedProduct.discount}% OFF
+                      </span>
                     )}
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <span className="text-sm text-gray-600">Stock:</span>
-                      <p className="font-semibold">{selectedProduct.stock}</p>
+                      <span className="text-sm text-gray-500">Category</span>
+                      <p className="font-medium">{selectedProduct.product_category}</p>
                     </div>
                     <div>
-                      <span className="text-sm text-gray-600">Category:</span>
-                      <p className="font-semibold">{selectedProduct.product_category}</p>
+                      <span className="text-sm text-gray-500">Pet Type</span>
+                      <p className="font-medium">{selectedProduct.pet_type_id?.pet_type || 'N/A'}</p>
                     </div>
                     <div>
-                      <span className="text-sm text-gray-600">Rating:</span>
-                      <p className="font-semibold">{selectedProduct.avg_rating}/5 ({selectedProduct.total_reviews} reviews)</p>
+                      <span className="text-sm text-gray-500">Stock</span>
+                      <p className="font-medium">{selectedProduct.stock} units</p>
                     </div>
                     <div>
-                      <span className="text-sm text-gray-600">Status:</span>
-                      <Badge 
-                        text={selectedProduct.is_active ? 'Active' : 'Inactive'} 
-                        status={selectedProduct.is_active ? 'delivered' : 'cancelled'} 
-                      />
+                      <span className="text-sm text-gray-500">Status</span>
+                      <p className={`font-medium ${
+                        selectedProduct.is_active ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {selectedProduct.is_active ? 'Active' : 'Inactive'}
+                      </p>
                     </div>
                   </div>
                   
+                  {selectedProduct.avg_rating > 0 && (
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <StarIcon
+                            key={i}
+                            className={`h-5 w-5 ${
+                              i < Math.floor(selectedProduct.avg_rating)
+                                ? 'text-yellow-400 fill-current'
+                                : 'text-gray-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-lg font-medium">{selectedProduct.avg_rating.toFixed(1)}</span>
+                      <span className="text-gray-500">({selectedProduct.total_reviews} reviews)</span>
+                    </div>
+                  )}
+                  
                   {selectedProduct.description && (
                     <div>
-                      <span className="text-sm text-gray-600">Description:</span>
-                      <p className="text-gray-800 mt-1">{selectedProduct.description}</p>
+                      <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
+                      <p className="text-gray-600 leading-relaxed">{selectedProduct.description}</p>
                     </div>
                   )}
                   
                   {selectedProduct.tags && selectedProduct.tags.length > 0 && (
                     <div>
-                      <span className="text-sm text-gray-600">Tags:</span>
+                      <h4 className="font-semibold text-gray-900 mb-2">Tags</h4>
                       <div className="flex flex-wrap gap-2 mt-1">
                         {selectedProduct.tags.map((tag, index) => (
                           <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
@@ -468,12 +561,18 @@ export default function ViewAllProducts() {
                   
                   {selectedProduct.variants && selectedProduct.variants.length > 0 && (
                     <div>
-                      <span className="text-sm text-gray-600">Variants:</span>
-                      <div className="space-y-2 mt-1">
+                      <h4 className="font-semibold text-gray-900 mb-2">Variants</h4>
+                      <div className="space-y-2">
                         {selectedProduct.variants.map((variant, index) => (
-                          <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
-                            <span className="text-sm">{variant.weight}</span>
-                            <span className="text-sm font-semibold">SAR {variant.price} (Stock: {variant.stock})</span>
+                          <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <div>
+                              <span className="font-medium">{variant.size || variant.color || `Variant ${index + 1}`}</span>
+                              {variant.color && <span className="text-gray-500 ml-2">• {variant.color}</span>}
+                            </div>
+                            <div className="text-right">
+                              <div className="font-semibold">SAR {variant.price}</div>
+                              <div className="text-sm text-gray-500">{variant.stock} in stock</div>
+                            </div>
                           </div>
                         ))}
                       </div>
