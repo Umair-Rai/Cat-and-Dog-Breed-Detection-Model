@@ -17,7 +17,7 @@ import AdminLogin from './Pages/Admin/Adminlogin';
 import CustomerProfile from './Pages/Profile/CustomerProfile';
 import SellerProfile from './Pages/Profile/SellerProfile';
 import AdminRoute from './components/AdminRoute';
-
+import BreederConnect from './Pages/Breeder/BreederConnect';
 function App() {
   const [message, setMessage] = useState("");
 
@@ -41,7 +41,7 @@ function App() {
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/profile/customer" element={<CustomerProfile />} />
         <Route path="/profile/seller" element={<SellerProfile />} />
-
+        <Route path="/breeder-connect" element={<BreederConnect />} />
         {/* Admin Protected Routes */}
         <Route
           path="/admin"
