@@ -23,7 +23,7 @@ exports.registerDefaultAdmin = async (req, res) => {
       admin_name: "Super Admin",
       admin_email: "u@gmail.com",
       admin_pass: "1", // pre-save hook will hash it
-      role: "admin"
+      role: "superadmin" // ✅ Changed from "admin" to "superadmin"
     });
 
     await defaultAdmin.save();

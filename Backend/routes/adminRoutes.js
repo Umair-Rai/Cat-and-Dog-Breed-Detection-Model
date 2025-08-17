@@ -8,14 +8,14 @@ router.post("/register", adminController.registerAdmin);
 router.post("/login", adminController.loginAdmin);
 router.get("/create-default", adminController.registerDefaultAdmin);
 
+// ✅ Updated to accept both admin and superadmin roles
 router.get("/me", verifyToken("admin"), (req, res) => {
   res.json({ id: req.user.id, role: req.user.role });
 });
 
-// Fix: Add the "admin" role parameter
 router.patch(
   "/password/:id",
-  verifyToken("admin"),  // ✅ This was missing the role parameter
+  verifyToken("admin"),
   adminController.updatePassword
 );
 

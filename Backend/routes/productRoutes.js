@@ -1,11 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const productController = require("../controllers/productController");
+const upload = require('../middleware/upload');
 
-router.post("/", productController.createProduct);
+// Use multer for product creation (multiple image uploads)
+router.post("/", upload.array('images', 10), productController.createProduct);
 router.get("/", productController.getAllProducts);
 router.get("/:id", productController.getProductById);
-router.put("/:id", productController.updateProduct);
+router.put("/:id", upload.array('images', 10), productController.updateProduct);
 router.delete("/:id", productController.deleteProduct);
 
 // Additional

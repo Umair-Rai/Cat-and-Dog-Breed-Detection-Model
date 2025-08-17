@@ -17,8 +17,14 @@ module.exports = (requiredRole) => (req, res, next) => {
 
       req.user = decoded; // { id, role }
 
-      if (requiredRole && decoded.role !== requiredRole) {
-        return res.status(403).json({ error: "Forbidden: Insufficient privileges" });
+      // ✅ Updated logic to handle both admin and superadmin roles
+      if (requiredRole) {
+        if (requiredRole === "admin" && !['admin', 'superadmin'].includes(decoded.role)) {
+          return res.status(403).json({ error: "Forbidden: Insufficient privileges" });
+        }
+        if (requiredRole !== "admin" && decoded.role !== requiredRole) {
+          return res.status(403).json({ error: "Forbidden: Insufficient privileges" });
+        }
       }
 
       next();

@@ -6,8 +6,18 @@ const cors = require("cors");
 dotenv.config();
 
 const app = express();
+
+// Enhanced middleware setup
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // ✅ JSON parser with size limit
+app.use(express.urlencoded({ extended: true, limit: '10mb' })); // ✅ URL-encoded parser
+
+// Debug middleware to log request body
+app.use((req, res, next) => {
+  console.log('Request body:', req.body);
+  console.log('Content-Type:', req.headers['content-type']);
+  next();
+});
 
 // Routes
 app.use("/api/admins", require("./routes/adminRoutes"));
