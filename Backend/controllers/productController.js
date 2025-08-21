@@ -3,15 +3,11 @@ const Category = require("../models/Category");
 
 exports.createProduct = async (req, res) => {
   try {
-    // Parse form data
     const {
       name,
       brand,
-      price,
-      stock,
       pet_type_id,
       product_category,
-      discount,
       description,
       season,
       is_active,
@@ -26,8 +22,17 @@ exports.createProduct = async (req, res) => {
     const images = req.files ? req.files.map(file => file.filename) : [];
 
     // Validate required fields
-    if (!name || !price || !stock || !pet_type_id || !product_category) {
+    if (!name || !pet_type_id || !product_category) {
       return res.status(400).json({ message: "Please fill in all required fields" });
+    }
+
+    // Validate variants
+    if (!variants || variants.length === 0) {
+      return res.status(400).json({ message: "At least one variant is required" });
+    }
+    const invalidVariant = variants.find(v => !v.weight || !v.price || !v.stock);
+    if (invalidVariant) {
+      return res.status(400).json({ message: "Each variant must have Weight, Price, and Stock" });
     }
 
     // Validate category
@@ -41,11 +46,8 @@ exports.createProduct = async (req, res) => {
     const productData = {
       name,
       brand,
-      price: parseFloat(price),
-      stock: parseInt(stock),
       pet_type_id,
       product_category,
-      discount: discount ? parseFloat(discount) : 0,
       tags,
       description,
       season,
@@ -89,15 +91,11 @@ exports.getProductById = async (req, res) => {
 
 exports.updateProduct = async (req, res) => {
   try {
-    // Parse form data similar to createProduct
     const {
       name,
       brand,
-      price,
-      stock,
       pet_type_id,
       product_category,
-      discount,
       description,
       season,
       is_active
@@ -110,8 +108,6 @@ exports.updateProduct = async (req, res) => {
 
     // Handle uploaded images
     const newImages = req.files ? req.files.map(file => file.filename) : [];
-    
-    // Combine existing and new images
     const images = existingImages ? [...existingImages, ...newImages] : newImages;
 
     // Validate category if provided
@@ -123,15 +119,20 @@ exports.updateProduct = async (req, res) => {
       }
     }
 
-    // Build update object with only provided fields
+    // Validate variants if provided
+    if (variants && variants.length > 0) {
+      const invalidVariant = variants.find(v => !v.weight || !v.price || !v.stock);
+      if (invalidVariant) {
+        return res.status(400).json({ message: "Each variant must have Weight, Price, and Stock" });
+      }
+    }
+
+    // Build update object
     const updateData = {};
     if (name !== undefined) updateData.name = name;
     if (brand !== undefined) updateData.brand = brand;
-    if (price !== undefined) updateData.price = parseFloat(price);
-    if (stock !== undefined) updateData.stock = parseInt(stock);
     if (pet_type_id !== undefined) updateData.pet_type_id = pet_type_id;
     if (product_category !== undefined) updateData.product_category = product_category;
-    if (discount !== undefined) updateData.discount = parseFloat(discount);
     if (tags !== undefined) updateData.tags = tags;
     if (description !== undefined) updateData.description = description;
     if (season !== undefined) updateData.season = season;

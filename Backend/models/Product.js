@@ -4,14 +4,13 @@ const variantSchema = new mongoose.Schema({
   weight: { type: String, required: true },
   price: { type: Number, required: true },
   stock: { type: Number, required: true },
+    discount: { type: Number, default: 0 }
 }, { _id: false });
 
 const productSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     brand: { type: String },
-    price: { type: Number, required: true },
-    stock: { type: Number, required: true },
 
     // 🆕 Link to the main pet type category (cat/dog)
     pet_type_id: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
@@ -19,7 +18,6 @@ const productSchema = new mongoose.Schema(
     // 🆕 Store the product category (must exist inside pet_type_id.product_categories)
     product_category: { type: String, required: true },
 
-    discount: { type: Number, default: 0 },
     tags: [{ type: String }],
     description: { type: String },
     images: [{ type: String }],
