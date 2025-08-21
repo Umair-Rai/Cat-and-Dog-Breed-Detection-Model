@@ -9,7 +9,6 @@ import BreedDetection from './Pages/Breed Detection/BreedDetection';
 import AuthPage from './Pages/Login/AuthPage';
 import Admin from './Pages/Admin/Admin';
 import AddProduct from './Pages/CRUD/AddProduct';
-import UpdateProduct from './Pages/CRUD/UpdateProduct';
 import AddCategory from './Pages/CRUD/AddCategory';
 import UpdateCategory from './Pages/CRUD/UpdateCategory';
 import ProductListingPage from './Pages/Product/product';
@@ -63,7 +62,7 @@ function App() {
           path="/admin/update-product/:productId"
           element={
             <AdminRoute>
-              <UpdateProduct />
+              <AddProduct />
             </AdminRoute>
           }
         />

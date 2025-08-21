@@ -62,8 +62,9 @@ const SellerVerification = () => {
       
       if (activeTab === 'sellers') {
         const matchesVerification = verificationFilter === 'all' || 
-                                   (verificationFilter === 'verified' && seller.isVerified) ||
-                                   (verificationFilter === 'unverified' && !seller.isVerified);
+                                   (verificationFilter === "verified" && seller.isVerified === "approved") ||
+                                   (verificationFilter === "pending" && seller.isVerified === "pending") ||
+                                   (verificationFilter === "rejected" && seller.isVerified === "rejected");
         return matchesSearch && matchesVerification;
       }
       
@@ -97,19 +98,20 @@ const SellerVerification = () => {
     });
   };
 
-  const handleVerifySeller = async (sellerId, isVerified) => {
+  const handleVerifySeller = async (sellerId, status) => {
     try {
       await axios.patch(`http://localhost:5000/api/sellers/${sellerId}/verify`, {
-        isVerified,
-        adminComment
-      });
+        status, // "approved" or "rejected"
+       adminComment
+     });
       fetchSellers();
       setShowSellerModal(false);
       setAdminComment('');
-    } catch (error) {
+   } catch (error) {
       console.error('Error verifying seller:', error);
     }
   };
+
 
   const handleVerifyPet = async (sellerId, petIndex, status) => {
     try {
@@ -125,11 +127,12 @@ const SellerVerification = () => {
     }
   };
 
-  const getVerificationBadge = (isVerified) => {
-    return isVerified ? 
-      <Badge text="Verified" status="delivered" /> : 
-      <Badge text="Pending" status="pending" />;
-  };
+const getVerificationBadge = (status) => {
+  if (status === "approved") return <Badge text="Verified" status="delivered" />;
+  if (status === "rejected") return <Badge text="Rejected" status="cancelled" />;
+  return <Badge text="Pending" status="pending" />;
+};
+
 
   const getPetStatusBadge = (status) => {
     const statusMap = {
@@ -142,8 +145,9 @@ const SellerVerification = () => {
 
   // Calculate stats
   const totalSellers = sellers.length;
-  const verifiedSellers = sellers.filter(seller => seller.isVerified).length;
-  const pendingSellers = sellers.filter(seller => !seller.isVerified).length;
+  const verifiedSellers = sellers.filter(s => s.isVerified === "approved").length;
+  const pendingSellers = sellers.filter(s => s.isVerified === "pending").length;
+  const rejectedSellers = sellers.filter(s => s.isVerified === "rejected").length;
   const allPets = getAllPets();
   const pendingPets = allPets.filter(pet => pet.status === 'pending').length;
   const approvedPets = allPets.filter(pet => pet.status === 'approved').length;
@@ -267,9 +271,10 @@ const SellerVerification = () => {
                 value={verificationFilter}
                 onChange={(e) => setVerificationFilter(e.target.value)}
                 options={[
-                  { value: 'all', label: 'All Sellers' },
-                  { value: 'verified', label: 'Verified' },
-                  { value: 'unverified', label: 'Pending Verification' }
+                  { value: "all", label: "All Sellers" },
+                  { value: "verified", label: "Verified" },
+                  { value: "pending", label: "Pending" },
+                  { value: "rejected", label: "Rejected" }
                 ]}
                 className="min-w-[160px]"
               />
@@ -370,14 +375,23 @@ const SellerVerification = () => {
                     <EyeIcon className="h-4 w-4" />
                     Review Details
                   </button>
-                  {!seller.isVerified && (
+                  {seller.isVerified === "pending" && (
+                  <>
                     <button
-                      onClick={() => handleVerifySeller(seller._id, true)}
+                      onClick={() => handleVerifySeller(seller._id, "approved")}
                       className="px-3 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"
                     >
-                      <CheckIcon className="h-4 w-4" />
+                    <CheckIcon className="h-4 w-4" />
                     </button>
+                    <button
+                       onClick={() => handleVerifySeller(seller._id, "rejected")}
+                      className="px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                    >
+                    <XMarkIcon className="h-4 w-4" />
+                    </button>
+                    </>
                   )}
+
                 </div>
               </div>
             </div>
@@ -602,7 +616,7 @@ const SellerVerification = () => {
               </div>
 
               {/* Admin Actions */}
-              {!selectedSeller.isVerified && (
+              {selectedSeller.isVerified === "pending" && (
                 <div className="space-y-4">
                   <h3 className="font-semibold text-gray-900">Verification Decision</h3>
                   <textarea
@@ -614,14 +628,14 @@ const SellerVerification = () => {
                   />
                   <div className="flex gap-3">
                     <Button
-                      onClick={() => handleVerifySeller(selectedSeller._id, true)}
+                      onClick={() => handleVerifySeller(selectedSeller._id, "approved")}
                       className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
                     >
                       <CheckIcon className="h-4 w-4" />
                       Approve Seller
                     </Button>
                     <Button
-                      onClick={() => handleVerifySeller(selectedSeller._id, false)}
+                      onClick={() => handleVerifySeller(selectedSeller._id, "rejected")}
                       className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white"
                     >
                       <XMarkIcon className="h-4 w-4" />

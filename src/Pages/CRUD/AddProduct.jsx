@@ -1,15 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom'; // ⬅️ added useParams
 import {
-  PlusIcon,
-  TrashIcon,
-  PhotoIcon,
-  CubeIcon,
-  TagIcon,
-  InformationCircleIcon,
-  CheckCircleIcon,
-  XMarkIcon
+  PlusIcon, TrashIcon, PhotoIcon, CubeIcon, TagIcon,
+  InformationCircleIcon, CheckCircleIcon, XMarkIcon
 } from '@heroicons/react/24/outline';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -17,11 +11,13 @@ import Input from '../../components/Input';
 import Select from '../../components/Select';
 import Badge from '../../components/Badge';
 
-const AddProduct = () => {
+const AddProduct = ({ isEdit = false }) => {
   const navigate = useNavigate();
+  const { productId } = useParams(); // ⬅️ detect if editing
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState([]);
   const [images, setImages] = useState([]);
+  const [existingImages, setExistingImages] = useState([]); // ⬅️ store old images
   const [variants, setVariants] = useState([{ weight: '', price: '', stock: '', discount: '' }]);
   const [form, setForm] = useState({
     name: '',
@@ -34,9 +30,13 @@ const AddProduct = () => {
     is_active: true
   });
 
+  // Fetch categories + product (if editing)
   useEffect(() => {
     fetchCategories();
-  }, []);
+    if (productId) {
+      fetchProduct(productId);
+    }
+  }, [productId]);
 
   const fetchCategories = async () => {
     try {
@@ -44,6 +44,29 @@ const AddProduct = () => {
       setCategories(res.data);
     } catch (err) {
       console.error('Failed to fetch categories:', err);
+    }
+  };
+
+  const fetchProduct = async (id) => {
+    try {
+      const res = await axios.get(`http://localhost:5000/api/products/${id}`);
+      const product = res.data;
+
+      setForm({
+        name: product.name || '',
+        brand: product.brand || '',
+        pet_type_id: product.pet_type_id?._id || '',
+        product_category: product.product_category || '',
+        tags: product.tags?.join(', ') || '',
+        description: product.description || '',
+        season: product.season || '',
+        is_active: product.is_active
+      });
+      setVariants(product.variants || []);
+      setExistingImages(product.images || []);
+    } catch (err) {
+      console.error('Failed to fetch product:', err);
+      toast.error('Error fetching product data');
     }
   };
 
@@ -59,9 +82,13 @@ const AddProduct = () => {
     setImages(updated);
   };
 
-  const addVariant = () => {
-    setVariants([...variants, { weight: '', price: '', stock: '', discount: '' }]);
+  const handleExistingImageRemove = (index) => {
+    const updated = [...existingImages];
+    updated.splice(index, 1);
+    setExistingImages(updated);
   };
+
+  const addVariant = () => setVariants([...variants, { weight: '', price: '', stock: '', discount: '' }]);
 
   const removeVariant = (index) => {
     if (variants.length > 1) {
@@ -85,125 +112,84 @@ const AddProduct = () => {
     }
   };
 
-  const handleSubmit = async (isDraft = false) => {
-    try {
-      setLoading(true);
+  const handleSubmit = async (isEdit) => {
+  try {
+    setLoading(true);
 
-      if (!form.name.trim()) {
-        toast.error("Product Name is required");
-        return;
+    const formData = new FormData();
+
+    // Add form fields
+    Object.keys(form).forEach((key) => {
+      if (key === "tags") {
+        formData.append(
+          key,
+          JSON.stringify(
+            form[key]
+              .split(",")
+              .map((tag) => tag.trim())
+              .filter((tag) => tag)
+          )
+        );
+      } else {
+        formData.append(key, form[key]);
       }
-      if (!form.pet_type_id.trim()) {
-        toast.error("Pet Type is required");
-        return;
-      }
-      if (!form.product_category.trim()) {
-        toast.error("Product Category is required");
-        return;
-      }
+    });
 
-      if (variants.length === 0) {
-        toast.error("At least one product variant is required");
-        return;
-      }
-      const invalidVariant = variants.find(v => !v.weight.trim() || !v.price || !v.stock);
-      if (invalidVariant) {
-        toast.error("Each variant must have Weight/Size, Price, and Stock");
-        return;
-      }
+    // Add variants
+    formData.append("variants", JSON.stringify(variants));
 
-      const formData = new FormData();
-      Object.keys(form).forEach(key => {
-        if (key === 'tags') {
-          formData.append(
-            key,
-            JSON.stringify(form[key].split(',').map(tag => tag.trim()).filter(tag => tag))
-          );
-        } else {
-          formData.append(key, form[key]);
-        }
-      });
+    // Add images
+    images.forEach((img) => {
+      formData.append("images", img);
+    });
 
-      formData.append('variants', JSON.stringify(variants));
-
-      images.forEach(image => {
-        formData.append('images', image);
-      });
-
-      formData.append('is_active', !isDraft);
-
-      await axios.post('http://localhost:5000/api/products', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        }
-      });
-
-      toast.success(isDraft ? 'Product saved as draft!' : 'Product added successfully!');
-
-      setForm({
-        name: '',
-        brand: '',
-        pet_type_id: '',
-        product_category: '',
-        tags: '',
-        description: '',
-        season: '',
-        is_active: true
-      });
-      setImages([]);
-      setVariants([{ weight: '', price: '', stock: '', discount: '' }]);
-
-      setTimeout(() => {
-        navigate('/admin');
-      }, 2000);
-    } catch (err) {
-      console.error('Error adding product:', err);
-      toast.error(err.response?.data?.message || 'Failed to add product');
-    } finally {
-      setLoading(false);
+    // Add existingImages if you want to keep them when updating
+    if (isEdit && existingImages.length > 0) {
+      formData.append("existingImages", JSON.stringify(existingImages));
     }
-  };
 
-  const petTypeOptions = categories.map(cat => ({
-    value: cat._id,
-    label: cat.pet_type
-  }));
+    if (isEdit && productId) {
+      await axios.put(`http://localhost:5000/api/products/${productId}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      toast.success("Product updated successfully!");
+    } else {
+      await axios.post("http://localhost:5000/api/products", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      toast.success("Product added successfully!");
+    }
 
-  const getProductCategoryOptions = () => {
-    if (!form.pet_type_id) return [];
-    const selectedCategory = categories.find(cat => cat._id === form.pet_type_id);
-    if (!selectedCategory || !selectedCategory.product_categories) return [];
-    return selectedCategory.product_categories.map(category => ({
-      value: category,
-      label: category.charAt(0).toUpperCase() + category.slice(1)
-    }));
-  };
+    navigate("/admin");
+  } catch (err) {
+    console.error("Error saving product:", err.response?.data || err.message);
+    toast.error(err.response?.data?.message || "Failed to save product");
+  } finally {
+    setLoading(false);
+  }
+};
 
-  const productCategoryOptions = getProductCategoryOptions();
 
-  const seasonOptions = [
-    { value: '', label: 'Select Season' },
-    { value: 'spring', label: 'Spring' },
-    { value: 'summer', label: 'Summer' },
-    { value: 'autumn', label: 'Autumn' },
-    { value: 'winter', label: 'Winter' },
-    { value: 'all_year', label: 'All Year' }
-  ];
 
+  // Category options
+  const petTypeOptions = categories.map(cat => ({ value: cat._id, label: cat.pet_type }));
+  const productCategoryOptions = form.pet_type_id
+    ? (categories.find(cat => cat._id === form.pet_type_id)?.product_categories || []).map(c => ({
+        value: c,
+        label: c.charAt(0).toUpperCase() + c.slice(1)
+      }))
+    : [];
+const seasonOptions = [ { value: '', label: 'Select Season' }, { value: 'spring', label: 'Spring' }, { value: 'summer', label: 'Summer' }, { value: 'autumn', label: 'Autumn' }, { value: 'winter', label: 'Winter' }, { value: 'all_year', label: 'All Year' } ];
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <ToastContainer />
 
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 bg-purple-100 rounded-lg">
-            <CubeIcon className="h-6 w-6 text-purple-600" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-800">Add New Product</h1>
-        </div>
-        <p className="text-gray-600">Create a new product listing with detailed information and variants.</p>
+      <div className="mb-8 flex items-center gap-3">
+        <CubeIcon className="h-6 w-6 text-purple-600" />
+        <h1 className="text-3xl font-bold text-gray-800">
+          {productId ? 'Update Product' : 'Add New Product'}
+        </h1>
       </div>
 
       <div className="max-w-4xl mx-auto space-y-6">
@@ -417,42 +403,35 @@ const AddProduct = () => {
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <div className="flex flex-col sm:flex-row gap-4 justify-end">
-            <button
-              onClick={() => navigate('/admin')}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-              disabled={loading}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => handleSubmit(true)}
-              className="px-6 py-3 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors font-medium"
-              disabled={loading}
-            >
-              Save as Draft
-            </button>
-            <button
-              onClick={() => handleSubmit(false)}
-              className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center gap-2"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Adding Product...
-                </>
-              ) : (
-                <>
-                  <CheckCircleIcon className="h-5 w-5" />
-                  Add Product
-                </>
-              )}
-            </button>
-          </div>
-        </div>
+{/* Action Buttons */}
+<div className="bg-white rounded-xl shadow-sm border p-6">
+  <div className="flex flex-col sm:flex-row gap-4 justify-end">
+    <button
+      onClick={() => navigate('/admin')}
+      className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+      disabled={loading}
+    >
+      Cancel
+    </button>
+    <button
+  onClick={() => handleSubmit(!!productId)} // use productId instead of isEdit
+  className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center gap-2"
+  disabled={loading}
+>
+  {loading ? (
+    <>
+      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+      {productId ? "Updating..." : "Adding..."}
+    </>
+  ) : (
+    <>
+      <CheckCircleIcon className="h-5 w-5" />
+      {productId ? "Update Product" : "Add Product"}
+    </>
+  )}
+</button>
+  </div>
+</div>
       </div>
     </div>
   );
