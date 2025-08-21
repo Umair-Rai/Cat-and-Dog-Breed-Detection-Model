@@ -10,6 +10,7 @@ router.post("/login", sellerController.loginSeller);
 router.get("/", sellerController.getAllSellers);
 router.get("/:id", sellerController.getSellerById);
 router.put("/:id", sellerController.updateSeller);
+router.patch("/:id/verify", sellerController.verifySeller);
 router.delete("/:id", sellerController.deleteSeller);
 
 // Pets

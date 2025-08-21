@@ -187,3 +187,22 @@ exports.searchProducts = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+exports.toggleProductStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { is_active } = req.body;
+
+    const product = await Product.findByIdAndUpdate(
+      id,
+      { is_active },
+      { new: true }
+    );
+
+    if (!product) return res.status(404).json({ message: "Product not found" });
+
+    res.json({ message: "Status updated successfully", product });
+  } catch (error) {
+    console.error("Error toggling product status:", error);
+    res.status(500).json({ message: error.message });
+  }
+};

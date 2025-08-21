@@ -27,7 +27,15 @@ const sellerSchema = new mongoose.Schema(
     profile_image: { type: String, default: "" },
     register_pet: { type: [registeredPetSchema], default: [] },
     services_offered: { type: [String], default: ["breeding"] },
-    isVerified: { type: Boolean, default: false },
+
+    // ✅ Now supports 3 statuses
+    isVerified: { 
+      type: String, 
+      enum: ["pending", "approved", "rejected"], 
+      default: "pending" 
+    },  
+
+    admin_comment: { type: String, default: "" },
     refresh_token: { type: String, default: "" }
   },
   { timestamps: true }

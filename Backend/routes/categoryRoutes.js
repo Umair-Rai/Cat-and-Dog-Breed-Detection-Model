@@ -13,4 +13,7 @@ router.post("/:id/subcategories", categoryController.addSubcategory);
 router.put("/pet/:id", categoryController.updatePetCategory);
 router.patch("/product/:id/subcategory", categoryController.updateSubcategory);
 
+// ✅ New: remove subcategory
+router.put("/:id/remove-category", categoryController.removeSubcategory);
+
 module.exports = router;

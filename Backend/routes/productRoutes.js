@@ -13,5 +13,6 @@ router.delete("/:id", productController.deleteProduct);
 // Additional
 router.get("/category/:categoryId", productController.getProductsByCategory);
 router.get("/search/:query", productController.searchProducts);
+router.patch("/:id/status", productController.toggleProductStatus);
 
 module.exports = router;

@@ -113,6 +113,27 @@ exports.updateSeller = async (req, res) => {
   }
 };
 
+
+// ------------------------- VERIFY SELLER -------------------------
+exports.verifySeller = async (req, res) => {
+  try {
+    const { status, adminComment } = req.body; // status = "approved" | "rejected"
+    const seller = await Seller.findById(req.params.id);
+
+    if (!seller) return res.status(404).json({ message: "Seller not found" });
+
+    seller.isVerified = status;
+    seller.admin_comment = adminComment || "";
+    await seller.save();
+
+    res.json({ message: `Seller ${status}`, seller });
+  } catch (error) {
+    console.error("Verify Seller Error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
 // ------------------------- DELETE SELLER -------------------------
 exports.deleteSeller = async (req, res) => {
   try {

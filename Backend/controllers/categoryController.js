@@ -224,4 +224,34 @@ exports.updateSubcategory = async (req, res) => {
     console.error("❌ Update subcategory error:", error);
     res.status(500).json({ error: error.message });
   }
+  };
+// DELETE subcategory from product_categories
+exports.removeSubcategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { categoryToRemove } = req.body;
+
+    if (!categoryToRemove) {
+      return res.status(400).json({ error: "Subcategory name is required" });
+    }
+
+    const updatedCategory = await Category.findByIdAndUpdate(
+      id,
+      { $pull: { product_categories: categoryToRemove } }, // ✅ use $pull
+      { new: true }
+    );
+
+    if (!updatedCategory) {
+      return res.status(404).json({ error: "Category not found" });
+    }
+
+    res.json({ message: "Subcategory removed successfully", updatedCategory });
+  } catch (error) {
+    console.error("❌ Remove subcategory error:", error);
+    res.status(500).json({ error: error.message });
+  }
 };
+
+
+
+
