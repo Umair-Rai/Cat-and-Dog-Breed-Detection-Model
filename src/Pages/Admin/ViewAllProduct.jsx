@@ -24,6 +24,8 @@ export default function ViewAllProducts() {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // filters
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedPetType, setSelectedPetType] = useState("all");
@@ -31,8 +33,14 @@ export default function ViewAllProducts() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
   const [showFilters, setShowFilters] = useState(false);
+
+  // modal
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showModal, setShowModal] = useState(false);
+
+  // Pet types and categories from DB
+  const [petCategories, setPetCategories] = useState([]); // raw DB data
+  const [categoryOptions, setCategoryOptions] = useState([]);
 
   // Fetch all products
   const fetchProducts = async () => {
@@ -48,13 +56,38 @@ export default function ViewAllProducts() {
     }
   };
 
+  // Fetch pet categories (pet types + categories)
+  const fetchPetCategories = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/pet-categories");
+      setPetCategories(res.data);
+    } catch (err) {
+      console.error("❌ Failed to fetch pet categories", err);
+      toast.error("Failed to fetch pet categories");
+    }
+  };
+
   useEffect(() => {
     fetchProducts();
+    fetchPetCategories();
   }, []);
 
-  const handleAddProduct = () => {
-    navigate("/admin/add-product");
-  };
+  // Handle Pet Type Change → update category options
+  useEffect(() => {
+    if (selectedPetType === "all") {
+      setCategoryOptions([{ value: "all", label: "All Categories" }]);
+      setSelectedCategory("all");
+    } else {
+      const pet = petCategories.find(p => p.pet_type === selectedPetType);
+      if (pet) {
+        const categories = pet.product_categories.map(c => ({ value: c.toLowerCase(), label: c }));
+        setCategoryOptions([{ value: "all", label: "All Categories" }, ...categories]);
+        setSelectedCategory("all");
+      }
+    }
+  }, [selectedPetType, petCategories]);
+
+  const handleAddProduct = () => navigate("/admin/add-product");
 
   const handleViewProduct = (product) => {
     setSelectedProduct(product);
@@ -80,19 +113,13 @@ export default function ViewAllProducts() {
       await axios.patch(
         `http://localhost:5000/api/products/${productId}/status`,
         { is_active: !currentStatus },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
+        { headers: { 'Authorization': `Bearer ${token}` } }
       );
-      
-      setProducts(prev => prev.map(product => 
-        product._id === productId 
-          ? { ...product, is_active: !currentStatus }
-          : product
-      ));
-      
+      setProducts(prev =>
+        prev.map(product =>
+          product._id === productId ? { ...product, is_active: !currentStatus } : product
+        )
+      );
       toast.success(`Product ${!currentStatus ? 'activated' : 'deactivated'} successfully`);
     } catch (error) {
       console.error('Error updating product status:', error);
@@ -100,19 +127,10 @@ export default function ViewAllProducts() {
     }
   };
 
-  // Filter options
-  const categoryOptions = [
-    { value: "all", label: "All Categories" },
-    { value: "food", label: "Food" },
-    { value: "toys", label: "Toys" },
-    { value: "accessories", label: "Accessories" },
-    { value: "health", label: "Health & Care" },
-  ];
-
+  // Pet Type options
   const petTypeOptions = [
     { value: "all", label: "All Pet Types" },
-    { value: "dog", label: "Dog" },
-    { value: "cat", label: "Cat" },
+    ...petCategories.map(p => ({ value: p.pet_type, label: p.pet_type }))
   ];
 
   const stockOptions = [
@@ -136,37 +154,33 @@ export default function ViewAllProducts() {
     { value: "rating", label: "Rating: High to Low" },
   ];
 
-  // Filter and sort products
+  // Apply Filters + Sorting
   const filteredProducts = products
     .filter(product => {
+      const v = product.variants?.[0];
       const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           product.brand?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = selectedCategory === "all" || product.product_category === selectedCategory;
+        product.brand?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesPetType = selectedPetType === "all" || product.pet_type_id?.pet_type === selectedPetType;
-      const matchesStock = stockFilter === "all" || 
-                          (stockFilter === "in_stock" && product.stock > 0) ||
-                          (stockFilter === "out_of_stock" && product.stock === 0);
+      const matchesCategory = selectedCategory === "all" || product.product_category === selectedCategory;
+      const matchesStock = stockFilter === "all" ||
+        (stockFilter === "in_stock" && v?.stock > 0) ||
+        (stockFilter === "out_of_stock" && v?.stock === 0);
       const matchesStatus = statusFilter === "all" ||
-                           (statusFilter === "active" && product.is_active) ||
-                           (statusFilter === "inactive" && !product.is_active);
-      
-      return matchesSearch && matchesCategory && matchesPetType && matchesStock && matchesStatus;
+        (statusFilter === "active" && product.is_active) ||
+        (statusFilter === "inactive" && !product.is_active);
+      return matchesSearch && matchesPetType && matchesCategory && matchesStock && matchesStatus;
     })
     .sort((a, b) => {
+      const va = a.variants?.[0];
+      const vb = b.variants?.[0];
       switch (sortBy) {
-        case "name":
-          return a.name.localeCompare(b.name);
-        case "price_low":
-          return a.price - b.price;
-        case "price_high":
-          return b.price - a.price;
-        case "stock":
-          return b.stock - a.stock;
-        case "rating":
-          return b.avg_rating - a.avg_rating;
+        case "name": return a.name.localeCompare(b.name);
+        case "price_low": return (va?.price || 0) - (vb?.price || 0);
+        case "price_high": return (vb?.price || 0) - (va?.price || 0);
+        case "stock": return (vb?.stock || 0) - (va?.stock || 0);
+        case "rating": return b.avg_rating - a.avg_rating;
         case "newest":
-        default:
-          return new Date(b.createdAt) - new Date(a.createdAt);
+        default: return new Date(b.createdAt) - new Date(a.createdAt);
       }
     });
 
@@ -312,111 +326,110 @@ export default function ViewAllProducts() {
 
       {/* Products Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredProducts.map((product) => (
-          <div key={product._id} className="bg-white rounded-xl shadow-sm border hover:shadow-md transition-shadow duration-200">
-            <div className="p-4">
-              {/* Product Image */}
-              <div className="relative mb-4">
-                <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                  {product.images && product.images.length > 0 ? (
-                    <img
-                      src={`http://localhost:5000/uploads/${product.images[0]}`}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <PhotoIcon className="h-12 w-12 text-gray-400" />
-                    </div>
-                  )}
-                </div>
-                {product.discount > 0 && (
-                  <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                    -{product.discount}%
-                  </div>
-                )}
-                <div className="absolute top-2 right-2 flex gap-2">
-                  <Badge 
-                    text={product.stock > 0 ? 'In Stock' : 'Out of Stock'} 
-                    status={product.stock > 0 ? 'delivered' : 'cancelled'} 
-                  />
-                  <button
-                    onClick={() => handleStatusToggle(product._id, product.is_active)}
-                    className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
-                      product.is_active 
-                        ? 'bg-green-100 text-green-800 hover:bg-green-200' 
-                        : 'bg-red-100 text-red-800 hover:bg-red-200'
-                    }`}
-                  >
-                    {product.is_active ? 'Active' : 'Inactive'}
-                  </button>
-                </div>
+{filteredProducts.map((product) => {
+  const v = product.variants?.[0]; // ✅ Always use first variant
+  return (
+    <div key={product._id} className="bg-white rounded-xl shadow-sm border hover:shadow-md transition-shadow duration-200">
+      <div className="p-4">
+        {/* Product Image */}
+        <div className="relative mb-4">
+          <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+            {product.images && product.images.length > 0 ? (
+              <img
+                src={`http://localhost:5000/uploads/${product.images[0]}`}
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <PhotoIcon className="h-12 w-12 text-gray-400" />
               </div>
-              
-              {/* Product Info */}
-              <div className="space-y-2 mb-4">
-                <h3 className="font-semibold text-gray-900 line-clamp-2">{product.name}</h3>
-                <p className="text-sm text-gray-500">{product.brand}</p>
-                <p className="text-sm text-gray-600 line-clamp-1">{product.product_category}</p>
-                
-                {/* Price and Rating */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-purple-600">SAR {product.price}</span>
-                    {product.discount > 0 && (
-                      <span className="text-sm text-gray-500 line-through">
-                        SAR {(product.price / (1 - product.discount / 100)).toFixed(2)}
-                      </span>
-                    )}
-                  </div>
-                  {product.avg_rating > 0 && (
-                    <div className="flex items-center gap-1">
-                      <StarIcon className="h-4 w-4 text-yellow-400 fill-current" />
-                      <span className="text-sm text-gray-600">{product.avg_rating.toFixed(1)}</span>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Stock Info */}
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Stock: {product.stock}</span>
-                  <span className="text-gray-600">Reviews: {product.total_reviews}</span>
-                </div>
-                
-                {/* Variants */}
-                {product.variants && product.variants.length > 0 && (
-                  <div className="text-sm text-gray-600">
-                    <span className="font-medium">{product.variants.length} variant(s)</span>
-                  </div>
-                )}
-              </div>
-              
-              {/* Actions */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleViewProduct(product)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
-                >
-                  <EyeIcon className="h-4 w-4" />
-                  View
-                </button>
-                <Link
-                  to={`/admin/update-product/${product._id}`}
-                  className="flex items-center justify-center px-3 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"
-                >
-                  <PencilIcon className="h-4 w-4" />
-                </Link>
-                <button
-                  onClick={() => handleDeleteProduct(product._id)}
-                  className="flex items-center justify-center px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
-                >
-                  <TrashIcon className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
+            )}
           </div>
-        ))}
+          {v?.discount > 0 && (
+            <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+              -{v.discount}%
+            </div>
+          )}
+          <div className="absolute top-2 right-2 flex gap-2">
+            <Badge 
+              text={v?.stock > 0 ? 'In Stock' : 'Out of Stock'} 
+              status={v?.stock > 0 ? 'delivered' : 'cancelled'} 
+            />
+            <button
+              onClick={() => handleStatusToggle(product._id, product.is_active)}
+              className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+                product.is_active 
+                  ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                  : 'bg-red-100 text-red-800 hover:bg-red-200'
+              }`}
+            >
+              {product.is_active ? 'Active' : 'Inactive'}
+            </button>
+          </div>
+        </div>
+        
+        {/* Product Info */}
+        <div className="space-y-2 mb-4">
+          <h3 className="font-semibold text-gray-900 line-clamp-2">{product.name}</h3>
+          <p className="text-sm text-gray-500">{product.brand}</p>
+          <p className="text-sm text-gray-600 line-clamp-1">{product.product_category}</p>
+          
+          {/* Price and Rating */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-bold text-purple-600">
+                SAR {(v ? v.price - (v.price * (v.discount || 0) / 100) : 0).toFixed(2)}
+              </span>
+              {v?.discount > 0 && (
+                <span className="text-sm text-gray-500 line-through">
+                  SAR {v.price}
+                </span>
+              )}
+            </div>
+            {product.avg_rating > 0 && (
+              <div className="flex items-center gap-1">
+                <StarIcon className="h-4 w-4 text-yellow-400 fill-current" />
+                <span className="text-sm text-gray-600">{product.avg_rating.toFixed(1)}</span>
+              </div>
+            )}
+          </div>
+          
+          {/* Stock, Weight, Reviews */}
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600">Stock: {v?.stock ?? "N/A"}</span>
+            <span className="text-gray-600">Weight/Size: {v?.weight ?? "N/A"}</span>
+            <span className="text-gray-600">Reviews: {product.total_reviews}</span>
+          </div>
+        </div>
+        
+        {/* Actions */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleViewProduct(product)}
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
+          >
+            <EyeIcon className="h-4 w-4" />
+            View
+          </button>
+          <Link
+            to={`/admin/update-product/${product._id}`}
+            className="flex items-center justify-center px-3 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"
+          >
+            <PencilIcon className="h-4 w-4" />
+          </Link>
+          <button
+            onClick={() => handleDeleteProduct(product._id)}
+            className="flex items-center justify-center px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+          >
+            <TrashIcon className="h-4 w-4" />
+          </button>
+        </div>
       </div>
+    </div>
+  );
+})}
+</div>
       
       {filteredProducts.length === 0 && (
         <div className="text-center py-12">
@@ -507,6 +520,7 @@ export default function ViewAllProducts() {
                       <p className="font-medium">{selectedProduct.pet_type_id?.pet_type || 'N/A'}</p>
                     </div>
                     <div>
+                      
                       <span className="text-sm text-gray-500">Stock</span>
                       <p className="font-medium">{selectedProduct.stock} units</p>
                     </div>

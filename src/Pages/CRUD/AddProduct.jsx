@@ -22,22 +22,18 @@ const AddProduct = () => {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState([]);
   const [images, setImages] = useState([]);
-  const [variants, setVariants] = useState([{ weight: '', price: '', stock: '' }]);
+  const [variants, setVariants] = useState([{ weight: '', price: '', stock: '', discount: '' }]);
   const [form, setForm] = useState({
     name: '',
     brand: '',
-    price: '',
-    stock: '',
     pet_type_id: '',
     product_category: '',
-    discount: 0,
     tags: '',
     description: '',
     season: '',
     is_active: true
   });
 
-  // Fetch categories on component mount
   useEffect(() => {
     fetchCategories();
   }, []);
@@ -64,7 +60,7 @@ const AddProduct = () => {
   };
 
   const addVariant = () => {
-    setVariants([...variants, { weight: '', price: '', stock: '' }]);
+    setVariants([...variants, { weight: '', price: '', stock: '', discount: '' }]);
   };
 
   const removeVariant = (index) => {
@@ -82,7 +78,6 @@ const AddProduct = () => {
   };
 
   const handleFormChange = (field, value) => {
-    // Reset product_category when pet_type_id changes
     if (field === 'pet_type_id') {
       setForm({ ...form, [field]: value, product_category: '' });
     } else {
@@ -93,71 +88,51 @@ const AddProduct = () => {
   const handleSubmit = async (isDraft = false) => {
     try {
       setLoading(true);
-      
-      // Debug: Log form values before validation
-      console.log('Form validation check:', {
-        name: `"${form.name}" (length: ${form.name?.length})`,
-        price: `"${form.price}" (type: ${typeof form.price})`,
-        stock: `"${form.stock}" (type: ${typeof form.stock})`,
-        pet_type_id: `"${form.pet_type_id}" (length: ${form.pet_type_id?.length})`,
-        product_category: `"${form.product_category}" (length: ${form.product_category?.length})`
-      });
-      
-      // Validate required fields with improved logic
-      const requiredFields = {
-        name: form.name?.trim(),
-        price: form.price?.toString().trim(),
-        stock: form.stock?.toString().trim(),
-        pet_type_id: form.pet_type_id?.trim(),
-        product_category: form.product_category?.trim()
-      };
-      
-      const emptyFields = Object.entries(requiredFields)
-        .filter(([key, value]) => !value || value === '')
-        .map(([key]) => key);
-      
-      if (emptyFields.length > 0) {
-        console.log('Empty fields:', emptyFields);
-        console.log('Form values:', form);
-        toast.error(`Please fill in all required fields: ${emptyFields.join(', ')}`);
+
+      if (!form.name.trim()) {
+        toast.error("Product Name is required");
         return;
       }
-      
-      // Additional validation for numeric fields
-      if (isNaN(parseFloat(form.price)) || parseFloat(form.price) <= 0) {
-        toast.error('Please enter a valid price greater than 0');
+      if (!form.pet_type_id.trim()) {
+        toast.error("Pet Type is required");
         return;
       }
-      
-      if (isNaN(parseInt(form.stock)) || parseInt(form.stock) < 0) {
-        toast.error('Please enter a valid stock quantity');
+      if (!form.product_category.trim()) {
+        toast.error("Product Category is required");
         return;
       }
-      
-      // Prepare form data
+
+      if (variants.length === 0) {
+        toast.error("At least one product variant is required");
+        return;
+      }
+      const invalidVariant = variants.find(v => !v.weight.trim() || !v.price || !v.stock);
+      if (invalidVariant) {
+        toast.error("Each variant must have Weight/Size, Price, and Stock");
+        return;
+      }
+
       const formData = new FormData();
-      
-      // Add form fields
       Object.keys(form).forEach(key => {
         if (key === 'tags') {
-          formData.append(key, JSON.stringify(form[key].split(',').map(tag => tag.trim()).filter(tag => tag)));
+          formData.append(
+            key,
+            JSON.stringify(form[key].split(',').map(tag => tag.trim()).filter(tag => tag))
+          );
         } else {
           formData.append(key, form[key]);
         }
       });
-      
-      // Add variants
-      formData.append('variants', JSON.stringify(variants.filter(v => v.weight && v.price && v.stock)));
-      
-      // Add images
-      images.forEach((image, index) => {
+
+      formData.append('variants', JSON.stringify(variants));
+
+      images.forEach(image => {
         formData.append('images', image);
       });
-      
-      // Add draft status
+
       formData.append('is_active', !isDraft);
 
-      const response = await axios.post('http://localhost:5000/api/products', formData, {
+      await axios.post('http://localhost:5000/api/products', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
@@ -165,29 +140,23 @@ const AddProduct = () => {
       });
 
       toast.success(isDraft ? 'Product saved as draft!' : 'Product added successfully!');
-      
-      // Reset form
+
       setForm({
         name: '',
         brand: '',
-        price: '',
-        stock: '',
         pet_type_id: '',
         product_category: '',
-        discount: 0,
         tags: '',
         description: '',
         season: '',
         is_active: true
       });
       setImages([]);
-      setVariants([{ weight: '', price: '', stock: '' }]);
-      
-      // Navigate back after a delay
+      setVariants([{ weight: '', price: '', stock: '', discount: '' }]);
+
       setTimeout(() => {
         navigate('/admin');
       }, 2000);
-      
     } catch (err) {
       console.error('Error adding product:', err);
       toast.error(err.response?.data?.message || 'Failed to add product');
@@ -201,38 +170,17 @@ const AddProduct = () => {
     label: cat.pet_type
   }));
 
-  // Dynamic product category options based on selected pet type
   const getProductCategoryOptions = () => {
-    if (!form.pet_type_id) {
-      return [];
-    }
-    
+    if (!form.pet_type_id) return [];
     const selectedCategory = categories.find(cat => cat._id === form.pet_type_id);
-    if (!selectedCategory || !selectedCategory.product_categories) {
-      return [];
-    }
-    
+    if (!selectedCategory || !selectedCategory.product_categories) return [];
     return selectedCategory.product_categories.map(category => ({
       value: category,
-      label: category.charAt(0).toUpperCase() + category.slice(1) // Capitalize first letter
+      label: category.charAt(0).toUpperCase() + category.slice(1)
     }));
   };
 
   const productCategoryOptions = getProductCategoryOptions();
-
-  // Remove this duplicate static array (lines 223-229):
-  // const productCategoryOptions = [
-  //   { value: 'food', label: 'Food' },
-  //   { value: 'toys', label: 'Toys' },
-  //   { value: 'accessories', label: 'Accessories' },
-  //   { value: 'health', label: 'Health & Care' },
-  //   { value: 'grooming', label: 'Grooming' },
-  // ];
-
-  const statusOptions = [
-    { value: true, label: 'Active' },
-    { value: false, label: 'Inactive' }
-  ];
 
   const seasonOptions = [
     { value: '', label: 'Select Season' },
@@ -246,8 +194,8 @@ const AddProduct = () => {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <ToastContainer />
-      
-      {/* Header Section */}
+
+      {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2 bg-purple-100 rounded-lg">
@@ -265,95 +213,61 @@ const AddProduct = () => {
             <InformationCircleIcon className="h-5 w-5 text-purple-600" />
             <h2 className="text-xl font-semibold text-gray-800">Basic Information</h2>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Product Name *</label>
-                <Input
-                  type="text"
-                  placeholder="Enter product name"
-                  value={form.name}
-                  onChange={(e) => handleFormChange('name', e.target.value)}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Brand</label>
-                <Input
-                  type="text"
-                  placeholder="Enter brand name"
-                  value={form.brand}
-                  onChange={(e) => handleFormChange('brand', e.target.value)}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Price (SAR) *</label>
-                <Input
-                  type="number"
-                  placeholder="0.00"
-                  value={form.price}
-                  onChange={(e) => handleFormChange('price', e.target.value)}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Stock Quantity *</label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  value={form.stock}
-                  onChange={(e) => handleFormChange('stock', e.target.value)}
-                />
-              </div>
+
+          {/* Row 1: Product Name | Pet Type | Season */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Product Name *</label>
+              <Input
+                type="text"
+                placeholder="Enter product name"
+                value={form.name}
+                onChange={(e) => handleFormChange('name', e.target.value)}
+              />
             </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Pet Type *</label>
-                <Select
-                  options={petTypeOptions}
-                  value={form.pet_type_id}
-                  onChange={(e) => handleFormChange('pet_type_id', e.target.value)}
-                  placeholder="Select pet type"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Product Category *</label>
-                <Select
-                  options={productCategoryOptions}
-                  value={form.product_category}
-                  onChange={(e) => handleFormChange('product_category', e.target.value)}
-                  placeholder="Select category"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Discount (%)</label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  value={form.discount}
-                  onChange={(e) => handleFormChange('discount', e.target.value)}
-                  min="0"
-                  max="100"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Season</label>
-                <Select
-                  options={seasonOptions}
-                  value={form.season}
-                  onChange={(e) => handleFormChange('season', e.target.value)}
-                  placeholder="Select season"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Pet Type *</label>
+              <Select
+                options={petTypeOptions}
+                value={form.pet_type_id}
+                onChange={(e) => handleFormChange('pet_type_id', e.target.value)}
+                placeholder="Select pet type"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Season</label>
+              <Select
+                options={seasonOptions}
+                value={form.season}
+                onChange={(e) => handleFormChange('season', e.target.value)}
+                placeholder="Select season"
+              />
             </div>
           </div>
-          
+
+          {/* Row 2: Brand | Product Category */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Brand</label>
+              <Input
+                type="text"
+                placeholder="Enter brand name"
+                value={form.brand}
+                onChange={(e) => handleFormChange('brand', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Product Category *</label>
+              <Select
+                options={productCategoryOptions}
+                value={form.product_category}
+                onChange={(e) => handleFormChange('product_category', e.target.value)}
+                placeholder="Select category"
+              />
+            </div>
+          </div>
+
+          {/* Description */}
           <div className="mt-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
             <textarea
@@ -364,7 +278,8 @@ const AddProduct = () => {
               onChange={(e) => handleFormChange('description', e.target.value)}
             />
           </div>
-          
+
+          {/* Tags */}
           <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">Tags (comma separated)</label>
             <Input
@@ -383,8 +298,6 @@ const AddProduct = () => {
             <h2 className="text-xl font-semibold text-gray-800">Product Images</h2>
             <Badge text={`${images.length}/6`} status="pending" />
           </div>
-          
-          {/* Upload Area */}
           <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-purple-400 hover:bg-purple-50 transition-colors relative">
             <PhotoIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-700 mb-2">Upload Product Images</h3>
@@ -399,8 +312,7 @@ const AddProduct = () => {
               disabled={images.length >= 6}
             />
           </div>
-          
-          {/* Image Preview */}
+
           {images.length > 0 && (
             <div className="mt-6">
               <h4 className="text-sm font-medium text-gray-700 mb-3">Image Preview</h4>
@@ -448,12 +360,12 @@ const AddProduct = () => {
               Add Variant
             </button>
           </div>
-          
+
           <div className="space-y-4">
             {variants.map((variant, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border border-gray-200 rounded-lg relative">
+              <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border border-gray-200 rounded-lg relative">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Weight/Size</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Weight/Size *</label>
                   <Input
                     type="text"
                     placeholder="e.g. 500g, Large"
@@ -462,7 +374,7 @@ const AddProduct = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Price (SAR)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price (SAR) *</label>
                   <Input
                     type="number"
                     placeholder="0.00"
@@ -471,12 +383,23 @@ const AddProduct = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Stock *</label>
                   <Input
                     type="number"
                     placeholder="0"
                     value={variant.stock}
                     onChange={(e) => handleVariantChange(index, 'stock', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Discount (%)</label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    value={variant.discount}
+                    onChange={(e) => handleVariantChange(index, 'discount', e.target.value)}
+                    min="0"
+                    max="100"
                   />
                 </div>
                 <div className="flex items-end">
