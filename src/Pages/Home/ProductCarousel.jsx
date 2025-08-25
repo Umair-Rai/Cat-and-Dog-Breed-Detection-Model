@@ -1,60 +1,37 @@
-import React, { useState } from 'react';
-import {
-  ArrowLeft,
-  ArrowRight,
-} from 'lucide-react';
-
-const products = [
-  {
-    id: '001',
-    handle: 'premium-food-bowl-set',
-    name: 'Premium Food Bowl Set',
-    price: '$49.99',
-    features: ['Non-slip base', 'Stainless steel', 'Perfect for medium to large breeds'],
-    imgPrimary: '/images/bowl-set-1.jpg',
-    imgHover: '/images/bowl-set-2.jpg',
-  },
-  {
-    id: '002',
-    handle: 'smart-puzzle-toy',
-    name: 'Smart Puzzle Toy',
-    price: '$29.99',
-    features: ['Interactive puzzle', 'Mental stimulation', 'Engaging for pets'],
-    imgPrimary: '/images/puzzle-toy-1.jpg',
-    imgHover: '/images/puzzle-toy-2.jpg',
-  },
-  {
-    id: '003',
-    handle: 'luxury-pet-bed',
-    name: 'Luxury Pet Bed',
-    price: '$89.99',
-    features: ['Memory foam comfort', 'Removable & washable cover', 'Great for small to medium dogs'],
-    imgPrimary: '/images/pet-bed-1.jpg',
-    imgHover: '/images/pet-bed-2.jpg',
-  },
-  {
-    id: '004',
-    handle: 'grooming-kit',
-    name: 'Pet Grooming Kit',
-    price: '$39.99',
-    features: ['Low noise clipper', 'Washable blades', 'Ergonomic handle'],
-    imgPrimary: '/images/grooming-kit-1.jpg',
-    imgHover: '/images/grooming-kit-2.jpg',
-  },
-  {
-    id: '005',
-    handle: 'collar-light',
-    name: 'LED Collar Light',
-    price: '$19.99',
-    features: ['Waterproof', 'Rechargeable', 'Multiple colors'],
-    imgPrimary: '/images/collar-light-1.jpg',
-    imgHover: '/images/collar-light-2.jpg',
-  },
-];
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 const ProductSlider = () => {
+  const [products, setProducts] = useState([]);
   const [startIndex, setStartIndex] = useState(0);
-  const visibleCount = 4;
+  const visibleCount = 4; // show 4 at a time
+
+const fetchProducts = async () => {
+  try {
+    const res = await axios.get("http://localhost:5000/api/products");
+
+    // 📌 Sort products by avg_rating (desc) then total_reviews (desc)
+    const sorted = [...res.data].sort((a, b) => {
+      if (b.avg_rating === a.avg_rating) {
+        return b.total_reviews - a.total_reviews;
+      }
+      return b.avg_rating - a.avg_rating;
+    });
+
+    // 📌 Take top 10
+    const bestTen = sorted.slice(0, 10);
+
+    setProducts(bestTen);
+  } catch (err) {
+    console.error("❌ Failed to fetch products", err);
+  }
+};
+
+useEffect(() => {
+  fetchProducts();
+}, []);
+
 
   const handlePrev = () => {
     setStartIndex((prev) => Math.max(prev - visibleCount, 0));
@@ -69,6 +46,7 @@ const ProductSlider = () => {
 
   return (
     <section className="bg-white py-12 px-4 max-w-7xl mx-auto">
+      {/* Header + Nav */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Pet Products</h2>
         <div className="flex space-x-2">
@@ -89,37 +67,75 @@ const ProductSlider = () => {
         </div>
       </div>
 
+      {/* Product Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {visibleProducts.map((p) => (
-          <a
-            key={p.id}
-            id={`CardLink-template--23989466726719__featured_collection_tAcHjR-${p.id}`}
-            href={`/products/${p.handle}`}
-            className="bg-white border border-gray-200 rounded-lg overflow-hidden group shadow-md hover:shadow-lg hover:shadow-purple-400 transition-shadow duration-300"
-          >
-            <div className="relative h-48">
-              <img
-                src={p.imgPrimary}
-                alt={p.name}
-                className="object-cover w-full h-full transition-opacity duration-500"
-              />
-              <img
-                src={p.imgHover}
-                alt={`${p.name} alternate`}
-                className="absolute top-0 left-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-              />
-            </div>
-            <div className="p-4">
-              <h3 className="text-md font-semibold text-gray-900 mb-2">{p.name}</h3>
-              <ul className="text-gray-600 text-sm mb-3 list-disc list-inside space-y-1">
-                {p.features.map((f) => (
-                  <li key={f}>{f}</li>
-                ))}
-              </ul>
-              <p className="text-purple-600 font-bold text-base">{p.price}</p>
-            </div>
-          </a>
-        ))}
+        {visibleProducts.map((product) => {
+          const v = product.variants?.[0]; // ✅ first variant
+          const hasDiscount = v?.discount > 0;
+          const salePrice = hasDiscount
+            ? v.price - (v.price * v.discount) / 100
+            : v?.price;
+
+          return (
+            <a
+              key={product._id}
+              href={`/products/${product._id}`}
+              className="bg-white border border-gray-200 rounded-lg overflow-hidden group shadow-md hover:shadow-lg hover:shadow-purple-400 transition-shadow duration-300"
+            >
+              {/* Image */}
+              <div className="relative h-48">
+                {product.images?.length > 0 ? (
+                  <img
+                    src={`http://localhost:5000/uploads/${product.images[0]}`}
+                    alt={product.name}
+                    className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
+                    No Image
+                  </div>
+                )}
+
+                {hasDiscount && (
+                  <span className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                    -{v.discount}%
+                  </span>
+                )}
+              </div>
+
+              {/* Content */}
+              <div className="p-4">
+                <h3 className="text-md font-semibold text-gray-900 mb-2 truncate">
+                  {product.name}
+                </h3>
+                <p className="text-sm text-gray-500 mb-2">
+                  {product.product_category}
+                </p>
+
+                {/* Price */}
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-purple-600 font-bold text-base">
+                    SAR {salePrice?.toFixed(2) ?? "0.00"}
+                  </span>
+                  {hasDiscount && (
+                    <span className="text-sm text-gray-500 line-through">
+                      SAR {v.price.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+
+                {/* Stock */}
+                <p
+                  className={`text-sm font-medium ${
+                    v?.stock > 0 ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {v?.stock > 0 ? `${v.stock} in stock` : "Out of stock"}
+                </p>
+              </div>
+            </a>
+          );
+        })}
       </div>
     </section>
   );

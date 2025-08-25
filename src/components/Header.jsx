@@ -55,15 +55,15 @@ const Header = () => {
   ];
 
   return (
-    <header className="bg-white shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="bg-gradient-to-br from-[#7D5FFF] to-[#5E9BFF] shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ">
         <div className="flex justify-between h-16 items-center">
           {/* Logo */}
           <div className="flex items-center space-x-3">
             <img
               src="/logo.png"
               alt="logo"
-              className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 p-1"
+              className="h-10 w-10 rounded-full bg-gradient-to-br from-[#7D5FFF] to-[#5E9BFF] p-1"
             />
             <span className="text-xl font-semibold text-gray-800">Petify</span>
           </div>

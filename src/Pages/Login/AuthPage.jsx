@@ -101,7 +101,7 @@ export default function AuthSlidePanel() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#7D5FFF] to-[#5E9BFF] flex items-center justify-center p-4">
-      <div className="relative w-full max-w-5xl h-[500px] bg-white rounded-3xl shadow-xl overflow-hidden grid grid-cols-2">
+      <div className="relative w-full max-w-5xl h-[650px] bg-white rounded-3xl shadow-xl overflow-hidden grid grid-cols-2">
         {/* Sign Up Form */}
         <div className="flex items-center justify-center bg-white z-10">
           <form
@@ -168,7 +168,7 @@ export default function AuthSlidePanel() {
         {/* Sliding Welcome Panel */}
         <div
           className={`absolute top-0 left-0 w-1/2 h-full bg-gradient-to-br from-[#7D5FFF] to-[#5E9BFF]
-            text-white p-10 flex flex-col items-center justify-center rounded-3xl z-20
+            text-white flex flex-col items-center justify-center h-[650px] rounded-3xl z-20
             transition-transform duration-700 ease-in-out
             ${isSignIn ? "translate-x-0" : "translate-x-full"}`}
         >

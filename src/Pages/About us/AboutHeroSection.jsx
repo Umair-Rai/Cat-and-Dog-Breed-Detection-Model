@@ -15,7 +15,7 @@ export default function AboutHeroSection() {
       />
 
       {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#b497ff99] to-[#d3b3ff99] mix-blend-multiply" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#7D5FFF] to-[#5E9BFF] mix-blend-multiply" />
 
       {/* Centered Text Content */}
       <div

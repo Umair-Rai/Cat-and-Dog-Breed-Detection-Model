@@ -195,71 +195,74 @@ export default function ProductListingPage() {
                 </div>
               ))
             : filteredProducts.map((product) => {
-                const hasDiscount =
-                  product.discount && product.discount > 0;
-                const salePrice = hasDiscount
-                  ? product.price - product.price * (product.discount / 100)
-                  : null;
+              const v = product.variants?.[0]; // ✅ first variant
+              const hasDiscount = v?.discount > 0;
+              const salePrice = hasDiscount
+              ? v.price - v.price * (v.discount / 100)
+              : v?.price;
 
-                return (
-                  <div
-                    key={product._id}
-                    className="bg-white rounded-xl shadow-sm hover:shadow-lg transition transform hover:-translate-y-1 overflow-hidden"
-                  >
-                    {/* Image */}
-                    <div className="relative group">
-                      <img
-                        src={product.images[0]}
-                        alt={product.name}
-                        className="w-full h-56 object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                      {hasDiscount && (
-                        <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                          -{product.discount}%
-                        </span>
-                      )}
-                      <button
-                        aria-label="Add to favorites"
-                        className="absolute top-3 right-3 p-1.5 bg-white rounded-full shadow hover:bg-gray-100 transition"
-                      >
-                        <FiHeart className="text-gray-500" />
-                      </button>
-                    </div>
+                 return (
+    <div
+      key={product._id}
+      className="bg-white rounded-xl shadow-sm hover:shadow-lg transition transform hover:-translate-y-1 overflow-hidden"
+    >
+      {/* Image */}
+      <div className="relative group">
+        <img
+          src={`http://localhost:5000/uploads/${product.images?.[0]}`}
+          alt={product.name}
+          className="w-full h-56 object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+        {hasDiscount && (
+          <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+            -{v.discount}%
+          </span>
+        )}
+        <button
+          aria-label="Add to favorites"
+          className="absolute top-3 right-3 p-1.5 bg-white rounded-full shadow hover:bg-gray-100 transition"
+        >
+          <FiHeart className="text-gray-500" />
+        </button>
+      </div>
 
-                    {/* Content */}
-                    <div className="p-4">
-                      <h3 className="font-semibold text-gray-800 truncate">
-                        {product.name}
-                      </h3>
-                      <div className="flex items-center text-yellow-400 text-sm my-1">
-                        {"⭐".repeat(5)}
-                        <span className="ml-2 text-gray-500 text-xs">
-                          ({product.total_reviews})
-                        </span>
-                      </div>
-                      <div className="mt-2">
-                        {hasDiscount ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-red-500 font-bold">
-                              ${(salePrice / 100).toFixed(2)}
-                            </span>
-                            <span className="line-through text-gray-400 text-sm">
-                              ${(product.price / 100).toFixed(2)}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="font-bold text-gray-900">
-                            ${(product.price / 100).toFixed(2)}
-                          </span>
-                        )}
-                      </div>
-                      <button className="mt-4 w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
-                        <FiShoppingCart /> Add to Cart
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+      {/* Content */}
+      <div className="p-4">
+        <h3 className="font-semibold text-gray-800 truncate">
+          {product.name}
+        </h3>
+        <div className="flex items-center text-yellow-400 text-sm my-1">
+          {"⭐".repeat(5)}
+          <span className="ml-2 text-gray-500 text-xs">
+            ({product.total_reviews})
+          </span>
+        </div>
+        <div className="mt-2">
+          {hasDiscount ? (
+            <div className="flex items-center gap-2">
+              <span className="text-red-500 font-bold">
+                SAR {salePrice.toFixed(2)}
+              </span>
+              <span className="line-through text-gray-400 text-sm">
+                SAR {v.price.toFixed(2)}
+              </span>
+            </div>
+          ) : (
+            <span className="font-bold text-gray-900">
+              SAR {v?.price?.toFixed(2) ?? "0.00"}
+            </span>
+          )}
+        </div>
+        <p className="text-sm text-gray-600 mt-1">
+          {v?.stock > 0 ? `${v.stock} in stock` : "Out of stock"}
+        </p>
+        <button className="mt-4 w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+          <FiShoppingCart /> Add to Cart
+        </button>
+      </div>
+    </div>
+  );
+})}
         </section>
       </div>
     </main>
