@@ -68,36 +68,39 @@ export default function AuthSlidePanel() {
 
   // ---------------------------- LOGIN ----------------------------
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const endpoint =
-        loginType === "Seller Account"
-          ? `${API_BASE}/sellers/login`
-          : `${API_BASE}/customers/login`;
+  e.preventDefault();
+  setLoading(true);
+  try {
+    const endpoint =
+      loginType === "Seller Account"
+        ? `${API_BASE}/sellers/login`
+        : `${API_BASE}/customers/login`;
 
-      const res = await axios.post(endpoint, {
-        email: login.email,
-        password: login.password,
-      });
+    const res = await axios.post(endpoint, {
+      email: login.email,
+      password: login.password,
+    });
 
-      alert(res.data.message || "Login successful!");
+    alert(res.data.message || "Login successful!");
 
-      const userWithType = {
-        ...res.data.user,
-        loginType: loginType,
-      };
+    // ✅ use customer OR seller depending on API response
+    const rawUser = res.data.customer || res.data.seller;
+    const userWithType = { ...rawUser, loginType };
 
-      localStorage.setItem("token", res.data.accessToken);
-      localStorage.setItem("user", JSON.stringify(userWithType));
-      setUser(userWithType);
-      navigate("/");
-    } catch (err) {
-      alert(err.response?.data?.error || "Login failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+    // ✅ store clean user and token
+    localStorage.setItem("token", res.data.accessToken);
+    localStorage.setItem("user", JSON.stringify(userWithType));
+
+    setUser(userWithType);
+
+    navigate("/"); // redirect after login
+  } catch (err) {
+    alert(err.response?.data?.message || "Login failed");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#7D5FFF] to-[#5E9BFF] flex items-center justify-center p-4">

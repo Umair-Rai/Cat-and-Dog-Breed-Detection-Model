@@ -1,9 +1,10 @@
+// src/context/AuthContext.jsx
 import { createContext, useState, useEffect } from "react";
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // { name, email, role, ... }
+  const [user, setUser] = useState(null); // { name, email, role, loginType, ... }
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,6 +23,12 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
   };
 
+  // ✅ keeps context + localStorage in sync
+  const updateUser = (updatedUser) => {
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
+
   const logout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
@@ -29,9 +36,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, login, logout, loading }}>
+    <AuthContext.Provider
+      value={{ user, setUser, updateUser, login, logout, loading }}
+    >
       {!loading && children}
     </AuthContext.Provider>
   );
 };
-  

@@ -18,17 +18,22 @@ const TABS = {
 };
 
 export default function CustomerProfile() {
-  // ---------- Hooks (always declared at top) ----------
-  const { user, setUser } = useContext(AuthContext);
+  const { user, updateUser, logout } = useContext(AuthContext);
 
-  // UI state
+  // ---------- Local State ----------
   const [activeTab, setActiveTab] = useState(TABS.ORDERS);
-
-  // Placeholder data - replace with API responses
   const [orders, setOrders] = useState([]);
   const [wishlist, setWishlist] = useState([]);
   const [addresses, setAddresses] = useState([]);
   const [editingProfile, setEditingProfile] = useState(false);
+
+  // ✅ NEW STATES moved up from renderSettings
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [confirmEmail, setConfirmEmail] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [confirmPhone, setConfirmPhone] = useState("");
+  const [confirmPass, setConfirmPass] = useState("");
 
   const [profileForm, setProfileForm] = useState({
     name: user?.name || "",
@@ -38,11 +43,18 @@ export default function CustomerProfile() {
 
   const [passwordForm, setPasswordForm] = useState({ current: "", newPass: "" });
   const [newAddress, setNewAddress] = useState({ label: "", line1: "", city: "", postal: "" });
-
-  // Loading & error states
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+
+
+  useEffect(() => {
+      if (!user) return;
+      const interval = setInterval(() => {
+        console.log("👤 Logged-in User:", user?.name);
+        }, 10000000000000);
+        return () => clearInterval(interval); // cleanup on unmount
+        }, [user]);
   // Keep profileForm in sync when user updates (e.g. login or context changes)
   useEffect(() => {
     setProfileForm({
@@ -114,25 +126,10 @@ export default function CustomerProfile() {
 
   // ---------- Handlers ----------
   const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    setUser(null);
+    logout(); // from AuthContext
     window.location.href = "/"; // full reload to clear app state
   };
 
-  const handleProfileSave = async (e) => {
-    e.preventDefault();
-    // TODO: call API to update user profile, then setUser(updatedUser)
-    setEditingProfile(false);
-    alert("Profile updated (mock). Hook this to your API.");
-  };
-
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-    // TODO: call API to change password
-    setPasswordForm({ current: "", newPass: "" });
-    alert("Password change (mock). Hook this to your API.");
-  };
 
   const handleAddAddress = (e) => {
     e.preventDefault();
@@ -239,44 +236,246 @@ export default function CustomerProfile() {
   };
 
   const renderSettings = () => {
-    return (
-      <div className="space-y-6">
-        <div className="bg-white rounded shadow p-4">
-          <h3 className="font-semibold text-lg mb-3">Edit Profile</h3>
-          <form onSubmit={handleProfileSave} className="space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <input className="input" value={profileForm.name} onChange={(e) => setProfileForm((p) => ({ ...p, name: e.target.value }))} />
-              <input className="input" value={profileForm.email} onChange={(e) => setProfileForm((p) => ({ ...p, email: e.target.value }))} />
-              <input className="input" value={profileForm.phone} onChange={(e) => setProfileForm((p) => ({ ...p, phone: e.target.value }))} />
-            </div>
-            <div className="text-right">
-              <button type="submit" className="px-4 py-2 bg-purple-600 text-white rounded">Save</button>
-            </div>
-          </form>
-        </div>
+  const saveDisabled =
+    !profileForm.name ||
+    (editingEmail && (!newEmail || newEmail !== confirmEmail)) ||
+    (!user.phone && (!newPhone || newPhone !== confirmPhone));
 
-        <div className="bg-white rounded shadow p-4">
-          <h3 className="font-semibold text-lg mb-3">Change Password</h3>
-          <form onSubmit={handleChangePassword} className="space-y-3">
-            <input type="password" className="input" placeholder="Current password" value={passwordForm.current} onChange={(e) => setPasswordForm((p) => ({ ...p, current: e.target.value }))} />
-            <input type="password" className="input" placeholder="New password" value={passwordForm.newPass} onChange={(e) => setPasswordForm((p) => ({ ...p, newPass: e.target.value }))} />
-            <div className="text-right">
-              <button type="submit" className="px-4 py-2 bg-red-500 text-white rounded">Change Password</button>
-            </div>
-          </form>
-        </div>
+  const passwordDisabled =
+    !passwordForm.current ||
+    !passwordForm.newPass ||
+    passwordForm.newPass !== confirmPass;
 
-        <div className="bg-white rounded shadow p-4">
-          <h3 className="font-semibold text-lg mb-3">Danger Zone</h3>
-          <p className="text-sm text-gray-600">Delete your account — this is irreversible.</p>
-          <div className="mt-3 flex gap-3">
-            <button className="px-4 py-2 bg-gray-200 rounded">Deactivate</button>
-            <button className="px-4 py-2 bg-red-600 text-white rounded">Delete Account</button>
+  return (
+    <div className="space-y-6">
+      {/* Edit Profile */}
+      <div className="bg-white rounded shadow p-4">
+        <h3 className="font-semibold text-lg mb-3">Edit Profile</h3>
+        <form
+          // ✅ PROFILE FORM SUBMIT
+onSubmit={async (e) => {
+  e.preventDefault();
+  if (saveDisabled) return;
+
+  const updatedData = {
+    name: profileForm.name,
+    email: editingEmail ? newEmail : profileForm.email,
+    phone: user.phone ? user.phone : newPhone,
+  };
+
+  try {
+    const res = await fetch(`http://localhost:5000/api/customers/${user._id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatedData),
+    });
+    const updated = await res.json();
+    if (res.ok) {
+      updateUser({ ...updated, loginType: user.loginType });
+      alert("Profile updated ✅");
+
+      // ✅ Reset only profile-related confirm states
+      setEditingEmail(false);
+      setNewEmail("");
+      setConfirmEmail("");
+      setNewPhone("");
+      setConfirmPhone("");
+    } else {
+      alert(updated.message || "Update failed ❌");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Server error ❌");
+  }
+}}
+
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Name */}
+            <input
+              className="input"
+              value={profileForm.name}
+              onChange={(e) => setProfileForm((p) => ({ ...p, name: e.target.value }))}
+              placeholder="Full Name"
+            />
+
+            {/* Email */}
+            <div className="col-span-2">
+              <div className="flex items-center gap-2">
+                <input className="input flex-1" value={profileForm.email} disabled />
+                <button
+                  type="button"
+                  onClick={() => setEditingEmail((prev) => !prev)}
+                  className="px-3 py-1 bg-purple-500 text-white rounded text-sm"
+                >
+                  {editingEmail ? "Cancel" : "Edit Email"}
+                </button>
+              </div>
+              {editingEmail && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                  <input
+                    className="input"
+                    type="email"
+                    placeholder="New Email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                  />
+                  <input
+                    className="input"
+                    type="email"
+                    placeholder="Confirm New Email"
+                    value={confirmEmail}
+                    onChange={(e) => setConfirmEmail(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Phone */}
+            {user.phone ? (
+              <input className="input" value={user.phone} disabled />
+            ) : (
+              <>
+                <input
+                  className="input"
+                  placeholder="Phone"
+                  value={newPhone.phone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                />
+                <input
+                  className="input"
+                  placeholder="Confirm Phone"
+                  value={confirmPhone}
+                  onChange={(e) => setConfirmPhone(e.target.value)}
+                />
+              </>
+            )}
           </div>
+
+          <div className="text-right mt-3">
+            <button
+              type="submit"
+              disabled={saveDisabled}
+              className={`px-4 py-2 rounded text-white ${
+                saveDisabled ? "bg-gray-400 cursor-not-allowed" : "bg-purple-600"
+              }`}
+            >
+              Save
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Change Password */}
+      <div className="bg-white rounded shadow p-4">
+        <h3 className="font-semibold text-lg mb-3">Change Password</h3>
+        <form
+          // ✅ PASSWORD FORM SUBMIT
+onSubmit={async (e) => {
+  e.preventDefault();
+  if (passwordDisabled) return;
+
+  try {
+    const res = await fetch(`http://localhost:5000/api/customers/${user._id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: passwordForm.newPass }),
+    });
+    const updated = await res.json();
+// ✅ PASSWORD FORM SUBMIT
+    if (res.ok) {
+      updateUser({ ...user, ...updated, loginType: user.loginType });
+      alert("Password changed ✅");
+
+      setPasswordForm({ current: "", newPass: "" });
+      setConfirmPass("");
+    } else {
+      alert(updated.message || "Password change failed ❌");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Server error ❌");
+  }
+}}
+
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <input
+              type="password"
+              className="input"
+              placeholder="Current password"
+              value={passwordForm.current}
+              onChange={(e) => setPasswordForm((p) => ({ ...p, current: e.target.value }))}
+            />
+            <input
+              type="password"
+              className="input"
+              placeholder="New password"
+              value={passwordForm.newPass}
+              onChange={(e) => setPasswordForm((p) => ({ ...p, newPass: e.target.value }))}
+            />
+            <input
+              type="password"
+              className="input"
+              placeholder="Confirm New Password"
+              value={confirmPass}
+              onChange={(e) => setConfirmPass(e.target.value)}
+            />
+            <div className="text-right">
+              <button
+                type="submit"
+                disabled={passwordDisabled}
+                className={`px-4 py-2 rounded text-white ${
+                  passwordDisabled ? "bg-gray-400 cursor-not-allowed" : "bg-red-500"
+                }`}
+              >
+                Change Password
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      {/* Danger Zone */}
+      <div className="bg-white rounded shadow p-4">
+        <h3 className="font-semibold text-lg mb-3">Danger Zone</h3>
+        <p className="text-sm text-gray-600">
+          Delete your account — this is irreversible.
+        </p>
+        <div className="mt-3">
+          <button
+            onClick={async () => {
+              if (!window.confirm("Are you sure you want to delete your account?")) return;
+              try {
+                const res = await fetch(`http://localhost:5000/api/customers/${user._id}`, {
+                  method: "DELETE",
+                });
+                if (res.ok) {
+                  alert("Account deleted ✅");
+                  logout();
+                  window.location.href = "/";
+                } else {
+                  const msg = await res.json();
+                  alert(msg.message || "Delete failed ❌");
+                }
+              } catch (err) {
+                console.error(err);
+                alert("Server error ❌");
+              }
+            }}
+            className="px-4 py-2 bg-red-600 text-white rounded"
+          >
+            Delete Account
+          </button>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
+
+
+
+
 
   // ---------- Main render ----------
   return (
